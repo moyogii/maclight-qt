@@ -28,7 +28,7 @@ This fork was created to learn more about PC streaming and the MacOS operating s
 ## Building
 
 ### macOS Build Requirements
-* Qt 6.7 SDK or later (earlier versions may work but are not officially supported)
+* Qt 6.9.2 SDK or later (Qt 6.9.2+ required for macOS Tahoe compatibility)
 * Xcode 14 or later (earlier versions may work but are not officially supported)
 * [create-dmg](https://github.com/sindresorhus/create-dmg) (only if building DMGs for use on non-development Macs)
 * Jellyfin-FFmpeg 7.1+ (required - see setup instructions below)

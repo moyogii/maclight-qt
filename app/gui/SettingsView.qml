@@ -1768,7 +1768,32 @@ Flickable {
                                   qsTr("The performance overlay is not supported on Steam Link or Raspberry Pi.")
                 }
 
-                
+                Button {
+                    id: grantSystemPermissionsButton
+                    width: implicitWidth
+                    text: qsTr("Grant Authorization For AWDL Control")
+                    font.pointSize: 12
+                    hoverEnabled: true
+                    visible: Qt.platform.os === "osx"
+                    enabled: !StreamingPreferences.hasAwdlAuthorization()
+
+                    Component.onCompleted: {
+                        StreamingPreferences.awdlAuthorizationChanged.connect(function(hasAuth) {
+                            enabled = !hasAuth
+                        })
+                    }
+
+                    onClicked: {
+                        StreamingPreferences.requestAwdlAuthorization()
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Asks for permission to enable/disable Apple Wireless Direct Link while the app is opened.")
+                }
+
+
 
             }
         }
