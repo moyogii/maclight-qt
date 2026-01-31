@@ -169,13 +169,11 @@ macx {
 
     LIBS += -lobjc -framework VideoToolbox -framework AVFoundation -framework CoreVideo -framework CoreGraphics -framework CoreMedia -framework AppKit -framework Metal -framework QuartzCore
 
-    # For libsoundio
-    LIBS += -framework CoreAudio -framework AudioUnit
 
     # For AWDL control
     LIBS += -framework Security
 
-    CONFIG += ffmpeg soundio
+    CONFIG += ffmpeg
 
     SOURCES += \
         settings/awdlcontroller.cpp
