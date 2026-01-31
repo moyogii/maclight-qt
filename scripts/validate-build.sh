@@ -20,14 +20,6 @@ if ! command -v pkg-config >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "Checking jellyfin-ffmpeg..."
-if ! pkg-config --exists jellyfin-ffmpeg; then
-    echo "Error: jellyfin-ffmpeg not found"
-    echo "Make sure to set up jellyfin-ffmpeg as described in README.md"
-    echo "and set PKG_CONFIG_PATH if using the macOS development setup"
-    exit 1
-fi
-
 # Check submodules
 echo "Checking submodules..."
 if ! [ -d "moonlight-common-c/moonlight-common-c" ] && [ -d "qmdnsengine/qmdnsengine" ]; then
