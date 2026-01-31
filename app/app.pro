@@ -155,20 +155,11 @@ win32:!winrt {
 }
 macx {
     !disable-prebuilts {
-        exists($$HOME/jellyfin/dev/include/libavcodec) {
-            INCLUDEPATH += $$HOME/jellyfin/dev/include
-            LIBS += -lssl.3 -lcrypto.3 -lavcodec.61 -lavutil.59 -lswscale.8 -lopus -lSDL2 -lSDL2_ttf
-            DEFINES += USING_JELLYFIN_FFMPEG
-            CONFIG += ffmpeg
-        } else {
-            LIBS += -lssl.3 -lcrypto.3 -lavcodec.61 -lavutil.59 -lswscale.8 -lopus -lSDL2 -lSDL2_ttf
-            DEFINES += USING_JELLYFIN_FFMPEG
-        }
+        LIBS += -lssl.3 -lcrypto.3 -lavcodec.62 -lavutil.60 -lswscale.9 -lopus -lSDL2 -lSDL2_ttf
         CONFIG += discord-rpc
     }
 
     LIBS += -lobjc -framework VideoToolbox -framework AVFoundation -framework CoreVideo -framework CoreGraphics -framework CoreMedia -framework AppKit -framework Metal -framework QuartzCore
-
 
     # For AWDL control
     LIBS += -framework Security
@@ -583,7 +574,7 @@ macx {
     QMAKE_BUNDLE_DATA += APP_BUNDLE_RESOURCES APP_BUNDLE_PLIST
 
     !disable-prebuilts {
-        APP_BUNDLE_FRAMEWORKS.files = $$files(../libs/mac/Frameworks/*.framework, true) $$files(../libs/mac/lib/*.dylib, true)
+        APP_BUNDLE_FRAMEWORKS.files = $$files(../libs/mac/lib/*.dylib, true)
         APP_BUNDLE_FRAMEWORKS.path = Contents/Frameworks
 
         QMAKE_BUNDLE_DATA += APP_BUNDLE_FRAMEWORKS

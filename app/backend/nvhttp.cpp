@@ -619,14 +619,14 @@ NvHTTP::openConnection(QUrl baseUrl,
     // HACK: Set network accessibility to work around QTBUG-80947 (introduced in Qt 5.14.0 and fixed in Qt 5.15.1)
     QT_WARNING_PUSH
     QT_WARNING_DISABLE_DEPRECATED
-    m_Nam.setNetworkAccessible(QNetworkAccessManager::Accessible);
+    m_Nam->setNetworkAccessible(QNetworkAccessManager::Accessible);
     QT_WARNING_POP
 #endif
 
     // Set content type for POST request
     request.setHeader(QNetworkRequest::ContentTypeHeader, "text/plain;charset=UTF-8");
 
-    QNetworkReply* reply = m_Nam.post(request, requestBody);
+    QNetworkReply* reply = m_Nam->post(request, requestBody);
 
     // Run the request with a timeout if requested
     QEventLoop loop;
@@ -651,7 +651,7 @@ NvHTTP::openConnection(QUrl baseUrl,
 
     // We must clear out cached authentication and connections or
     // GFE will puke next time
-    m_Nam.clearAccessCache();
+    m_Nam->clearAccessCache();
 
     // Handle error
     if (reply->error() != QNetworkReply::NoError)
