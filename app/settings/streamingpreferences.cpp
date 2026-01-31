@@ -56,6 +56,8 @@
 #define SER_KEEPAWAKE "keepawake"
 #define SER_LANGUAGE "language"
 #define SER_CLIPBOARDSYNC "clipboardsync"
+#define SER_AWDL_ENABLED "awdlenabled"
+#define SER_AWDL_FIRSTRUN_SHOWN "awdlfirstrunshown"
 
 
 #define CURRENT_DEFAULT_VER 2
@@ -165,6 +167,8 @@ void StreamingPreferences::reload()
     swapFaceButtons = settings.value(SER_SWAPFACEBUTTONS, false).toBool();
     keepAwake = settings.value(SER_KEEPAWAKE, true).toBool();
     enableClipboardSync = settings.value(SER_CLIPBOARDSYNC, true).toBool();
+    awdlEnabled = settings.value(SER_AWDL_ENABLED, false).toBool();
+    awdlFirstRunShown = settings.value(SER_AWDL_FIRSTRUN_SHOWN, false).toBool();
     enableHdr = settings.value(SER_HDR, false).toBool();
     captureSysKeysMode = static_cast<CaptureSysKeysMode>(settings.value(SER_CAPTURESYSKEYS,
                                                          static_cast<int>(CaptureSysKeysMode::CSK_OFF)).toInt());
@@ -374,6 +378,8 @@ void StreamingPreferences::save()
     settings.setValue(SER_CAPTURESYSKEYS, captureSysKeysMode);
     settings.setValue(SER_KEEPAWAKE, keepAwake);
     settings.setValue(SER_CLIPBOARDSYNC, enableClipboardSync);
+    settings.setValue(SER_AWDL_ENABLED, awdlEnabled);
+    settings.setValue(SER_AWDL_FIRSTRUN_SHOWN, awdlFirstRunShown);
 }
 
 int StreamingPreferences::getDefaultBitrate(int width, int height, int fps, bool yuv444)

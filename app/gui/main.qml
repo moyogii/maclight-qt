@@ -56,6 +56,11 @@ ApplicationWindow {
                 wow64Dialog.open()
             }
 
+            // Show AWDL first-run dialog on macOS if not shown before
+            if (Qt.platform.os === "osx" && !StreamingPreferences.awdlFirstRunShown) {
+                awdlFirstRunDialog.open()
+            }
+
             // Hardware acceleration and unmapped gamepads are checked asynchronously
             SystemProperties.hasHardwareAccelerationChanged.connect(hasHardwareAccelerationChanged)
             SystemProperties.unmappedGamepadsChanged.connect(hasUnmappedGamepadsChanged)
@@ -478,6 +483,10 @@ ApplicationWindow {
         helpTextSeparator: "\n\n"
         helpText: qsTr("Click the Help button for information on how to map your gamepads.")
         helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Gamepad-Mapping"
+    }
+
+    AwdlFirstRunDialog {
+        id: awdlFirstRunDialog
     }
 
     // This dialog appears when quitting via keyboard or gamepad button

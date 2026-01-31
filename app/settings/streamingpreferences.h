@@ -148,6 +148,8 @@ public:
     Q_PROPERTY(CaptureSysKeysMode captureSysKeysMode MEMBER captureSysKeysMode NOTIFY captureSysKeysModeChanged)
     Q_PROPERTY(Language language MEMBER language NOTIFY languageChanged)
     Q_PROPERTY(bool enableClipboardSync MEMBER enableClipboardSync NOTIFY enableClipboardSyncChanged)
+    Q_PROPERTY(bool awdlEnabled MEMBER awdlEnabled NOTIFY awdlEnabledChanged)
+    Q_PROPERTY(bool awdlFirstRunShown MEMBER awdlFirstRunShown NOTIFY awdlFirstRunShownChanged)
     Q_INVOKABLE bool retranslate();
     
     // AWDL control methods
@@ -191,6 +193,8 @@ public:
     bool swapFaceButtons;
     bool keepAwake;
     bool enableClipboardSync;
+    bool awdlEnabled;
+    bool awdlFirstRunShown;
     int packetSize;
     AudioConfig audioConfig;
     VideoCodecConfig videoCodecConfig;
@@ -240,7 +244,9 @@ signals:
     void keepAwakeChanged();
     void languageChanged();
     void enableClipboardSyncChanged();
-    
+    void awdlEnabledChanged();
+    void awdlFirstRunShownChanged();
+
     void awdlAuthorizationChanged(bool hasAuth);
     void awdlError(const QString &error);
 

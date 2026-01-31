@@ -1769,28 +1769,24 @@ Flickable {
                 }
 
                 Button {
-                    id: grantSystemPermissionsButton
+                    id: resetAwdlChoiceButton
                     width: implicitWidth
-                    text: qsTr("Grant Authorization For AWDL Control")
+                    text: qsTr("Reset AWDL Management Choice")
                     font.pointSize: 12
                     hoverEnabled: true
                     visible: Qt.platform.os === "osx"
-                    enabled: !StreamingPreferences.hasAwdlAuthorization()
-
-                    Component.onCompleted: {
-                        StreamingPreferences.awdlAuthorizationChanged.connect(function(hasAuth) {
-                            enabled = !hasAuth
-                        })
-                    }
+                    enabled: StreamingPreferences.awdlFirstRunShown
 
                     onClicked: {
-                        StreamingPreferences.requestAwdlAuthorization()
+                        StreamingPreferences.awdlFirstRunShown = false
+                        StreamingPreferences.save()
+                        enabled = false
                     }
 
                     ToolTip.delay: 1000
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Asks for permission to enable/disable Apple Wireless Direct Link while the app is opened.")
+                    ToolTip.text: qsTr("Resets your AWDL management choice. The AWDL prompt will appear again on next launch.")
                 }
 
 

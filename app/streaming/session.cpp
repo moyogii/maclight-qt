@@ -1284,11 +1284,13 @@ private:
         // Finish cleanup of the connection state
         LiStopConnection();
 
-        // Stop AWDL control
-        if (!m_Session->m_Preferences->stopAwdlControl()) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to stop AWDL control after streaming");
-        } else {
-            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AWDL control stopped and interface re-enabled after streaming");
+        // Stop AWDL control (if it was enabled)
+        if (m_Session->m_Preferences->awdlEnabled) {
+            if (!m_Session->m_Preferences->stopAwdlControl()) {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to stop AWDL control after streaming");
+            } else {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AWDL control stopped and interface re-enabled after streaming");
+            }
         }
 
         // Perform a best-effort app quit
@@ -1752,11 +1754,15 @@ void Session::start()
     // We're now active
     s_ActiveSession = this;
 
-    // Start AWDL control for optimal streaming performance
-    if (!m_Preferences->startAwdlControl()) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to start AWDL control for streaming");
+    // Start AWDL control for optimal streaming performance (if enabled by user)
+    if (m_Preferences->awdlEnabled) {
+        if (!m_Preferences->startAwdlControl()) {
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to start AWDL control for streaming");
+        } else {
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AWDL continuous control started for streaming");
+        }
     } else {
-        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AWDL continuous control started for streaming");
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AWDL control disabled by user preference");
     }
 
     // Initialize the gamepad code with our preferences
