@@ -66,58 +66,30 @@ jobs:
         
     - name: Install dependencies
       run: |
-        brew install qt@6 create-dmg
+        brew install qt@6 node
+        npm install --global create-dmg
         echo "/opt/homebrew/bin" >> $GITHUB_PATH
         echo "/opt/homebrew/opt/qt@6/bin" >> $GITHUB_PATH
 
-    - name: Build
+    - name: Build and Package
+      env:
+        CI_VERSION: ${{ steps.version.outputs.version }}
       run: |
-        qmake6 moonlight-qt.pro
-        make release
-        
-    - name: Sign application
-      run: |
-        APP="app/Moonlight.app"
+        bash scripts/generate-dmg.sh Release
 
-        # Strip existing signatures from all embedded code (required for linker-signed libs)
-        find "$APP/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.framework" \) -exec codesign --remove-signature {} \; 2>/dev/null || true
-        codesign --remove-signature "$APP/Contents/MacOS/Moonlight" 2>/dev/null || true
-
-        # Sign the entire bundle with --deep to recursively sign all nested code
-        # Note: --options runtime is NOT used because it's incompatible with linker-signed
-        # libraries on macOS 15+ and causes "different Team IDs" errors at runtime
-        codesign --force --deep --sign - "$APP"
-        xattr -cr "$APP"
-
-        # Verify
-        codesign --verify --deep --strict --verbose=2 "$APP"
-        
-    - name: Create DMG
-      run: |
-        DMG_NAME="Moonlight-v${{ steps.version.outputs.version }}-macOS.dmg"
-        create-dmg \
-          --volname "Moonlight v${{ steps.version.outputs.version }}" \
-          --window-pos 200 120 \
-          --window-size 600 300 \
-          --icon-size 100 \
-          --icon "Moonlight.app" 175 120 \
-          --hide-extension "Moonlight.app" \
-          --app-drop-link 425 120 \
-          "$DMG_NAME" \
-          "app/Moonlight.app"
-
-        codesign --force --sign - "$DMG_NAME"
-        xattr -cr "$DMG_NAME" || true
-        
-        # Create a generic symlink for easier artifact handling
-        ln -sf "$DMG_NAME" "Moonlight.dmg"
-        
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Moonlight-v${{ steps.version.outputs.version }}-macOS
-        path: Moonlight.dmg
-        
+        path: build/installer-Release/Moonlight-${{ steps.version.outputs.version }}.dmg
+        compression-level: 0
+
+    - name: Upload Symbols
+      uses: actions/upload-artifact@v4
+      with:
+        name: Moonlight-v${{ steps.version.outputs.version }}-symbols
+        path: build/installer-Release/*.dsym/*
+
     - name: Create Release
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
       uses: softprops/action-gh-release@v2
@@ -126,7 +98,7 @@ jobs:
         name: "Moonlight v${{ steps.version.outputs.version }}"
         body_path: changelog.md
         files: |
-          Moonlight-v${{ steps.version.outputs.version }}-macOS.dmg
+          build/installer-Release/Moonlight-${{ steps.version.outputs.version }}.dmg
         draft: false
         prerelease: false
         make_latest: true
