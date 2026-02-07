@@ -62,6 +62,42 @@ NavigableDialog {
         if (qtKey >= Qt.Key_F1 && qtKey <= Qt.Key_F12) {
             return 58 + (qtKey - Qt.Key_F1)
         }
+
+        // Common punctuation keys (including shifted forms)
+        if (qtKey === Qt.Key_Minus || qtKey === Qt.Key_Underscore) {
+            return 45  // SDL_SCANCODE_MINUS
+        }
+        if (qtKey === Qt.Key_Equal || qtKey === Qt.Key_Plus) {
+            return 46  // SDL_SCANCODE_EQUALS
+        }
+        if (qtKey === Qt.Key_BracketLeft || qtKey === Qt.Key_BraceLeft) {
+            return 47  // SDL_SCANCODE_LEFTBRACKET
+        }
+        if (qtKey === Qt.Key_BracketRight || qtKey === Qt.Key_BraceRight) {
+            return 48  // SDL_SCANCODE_RIGHTBRACKET
+        }
+        if (qtKey === Qt.Key_Backslash || qtKey === Qt.Key_Bar) {
+            return 49  // SDL_SCANCODE_BACKSLASH
+        }
+        if (qtKey === Qt.Key_Semicolon || qtKey === Qt.Key_Colon) {
+            return 51  // SDL_SCANCODE_SEMICOLON
+        }
+        if (qtKey === Qt.Key_Apostrophe || qtKey === Qt.Key_QuoteDbl) {
+            return 52  // SDL_SCANCODE_APOSTROPHE
+        }
+        if (qtKey === Qt.Key_QuoteLeft || qtKey === Qt.Key_AsciiTilde) {
+            return 53  // SDL_SCANCODE_GRAVE
+        }
+        if (qtKey === Qt.Key_Comma || qtKey === Qt.Key_Less) {
+            return 54  // SDL_SCANCODE_COMMA
+        }
+        if (qtKey === Qt.Key_Period || qtKey === Qt.Key_Greater) {
+            return 55  // SDL_SCANCODE_PERIOD
+        }
+        if (qtKey === Qt.Key_Slash || qtKey === Qt.Key_Question) {
+            return 56  // SDL_SCANCODE_SLASH
+        }
+
         return 0
     }
 
@@ -81,7 +117,7 @@ NavigableDialog {
         }
 
         Label {
-            text: qsTr("Hold 0-4 modifiers (Ctrl, Alt, Shift, Cmd/Super) then press a key (A-Z, 0-9, F1-F12).")
+            text: qsTr("Hold 0-4 modifiers (Ctrl, Alt, Shift, Cmd/Super) then press a key (A-Z, 0-9, F1-F12, or punctuation like [, ], \\, -, +).")
             font.pointSize: 12
             wrapMode: Label.WordWrap
             Layout.maximumWidth: 350

@@ -496,6 +496,8 @@ QString StreamingPreferences::hotkeyToString(int modifiers, int scanCode)
         result += QStringLiteral("Cmd+");
     }
 
+    const bool hasShift = (modifiers & 0x0003) != 0;
+
     // SDL scancodes: A=4..Z=29, 1=30..9=38, 0=39, F1=58..F12=69
     if (scanCode >= 4 && scanCode <= 29) {
         result += QChar('A' + (scanCode - 4));
@@ -505,6 +507,39 @@ QString StreamingPreferences::hotkeyToString(int modifiers, int scanCode)
     }
     else if (scanCode == 39) {
         result += QChar('0');
+    }
+    else if (scanCode == 45) {
+        result += hasShift ? QStringLiteral("_") : QStringLiteral("-");
+    }
+    else if (scanCode == 46) {
+        result += hasShift ? QStringLiteral("+") : QStringLiteral("=");
+    }
+    else if (scanCode == 47) {
+        result += hasShift ? QStringLiteral("{") : QStringLiteral("[");
+    }
+    else if (scanCode == 48) {
+        result += hasShift ? QStringLiteral("}") : QStringLiteral("]");
+    }
+    else if (scanCode == 49) {
+        result += hasShift ? QStringLiteral("|") : QStringLiteral("\\");
+    }
+    else if (scanCode == 51) {
+        result += hasShift ? QStringLiteral(":") : QStringLiteral(";");
+    }
+    else if (scanCode == 52) {
+        result += hasShift ? QStringLiteral("\"") : QStringLiteral("'");
+    }
+    else if (scanCode == 53) {
+        result += hasShift ? QStringLiteral("~") : QStringLiteral("`");
+    }
+    else if (scanCode == 54) {
+        result += hasShift ? QStringLiteral("<") : QStringLiteral(",");
+    }
+    else if (scanCode == 55) {
+        result += hasShift ? QStringLiteral(">") : QStringLiteral(".");
+    }
+    else if (scanCode == 56) {
+        result += hasShift ? QStringLiteral("?") : QStringLiteral("/");
     }
     else if (scanCode >= 58 && scanCode <= 69) {
         result += QStringLiteral("F") + QString::number(scanCode - 58 + 1);
