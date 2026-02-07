@@ -21,7 +21,7 @@ Occassionally this fork will pull in relevant changes from [moonlight-common-c](
  - Programmable Hotkeys (Toggle Performance Overlay, Exit Stream)
  
 ## Downloads
-- [macOS](https://github.com/moyogii/moonlight-mac/releases)
+- [macOS](https://github.com/moyogii/maclight-qt/releases)
 
 ## Building on macOS
 
