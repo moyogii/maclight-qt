@@ -78,9 +78,9 @@ desktop.ini
 
 # Project documentation (auto-generated)
 CLAUDE.md
-QWEN.md
 /.roo
 *.log
 .roo/rules/coding-standards.md
 .roo/rules-code/implementation-rules.md
 .roo/rules-architect/architecture-rules.md
+AGENTS.md
