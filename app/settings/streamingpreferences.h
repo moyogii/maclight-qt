@@ -152,6 +152,8 @@ public:
     Q_PROPERTY(bool awdlFirstRunShown MEMBER awdlFirstRunShown NOTIFY awdlFirstRunShownChanged)
     Q_PROPERTY(int hotkeyToggleStatsModifiers MEMBER hotkeyToggleStatsModifiers NOTIFY hotkeyToggleStatsChanged)
     Q_PROPERTY(int hotkeyToggleStatsScanCode MEMBER hotkeyToggleStatsScanCode NOTIFY hotkeyToggleStatsChanged)
+    Q_PROPERTY(int hotkeyToggleMouseModeModifiers MEMBER hotkeyToggleMouseModeModifiers NOTIFY hotkeyToggleMouseModeChanged)
+    Q_PROPERTY(int hotkeyToggleMouseModeScanCode MEMBER hotkeyToggleMouseModeScanCode NOTIFY hotkeyToggleMouseModeChanged)
     Q_PROPERTY(int hotkeyExitStreamModifiers MEMBER hotkeyExitStreamModifiers NOTIFY hotkeyExitStreamChanged)
     Q_PROPERTY(int hotkeyExitStreamScanCode MEMBER hotkeyExitStreamScanCode NOTIFY hotkeyExitStreamChanged)
     Q_INVOKABLE bool retranslate();
@@ -202,6 +204,8 @@ public:
     bool awdlFirstRunShown;
     int hotkeyToggleStatsModifiers;
     int hotkeyToggleStatsScanCode;
+    int hotkeyToggleMouseModeModifiers;
+    int hotkeyToggleMouseModeScanCode;
     int hotkeyExitStreamModifiers;
     int hotkeyExitStreamScanCode;
     int packetSize;
@@ -257,6 +261,7 @@ signals:
     void awdlFirstRunShownChanged();
 
     void hotkeyToggleStatsChanged();
+    void hotkeyToggleMouseModeChanged();
     void hotkeyExitStreamChanged();
 
     void awdlAuthorizationChanged(bool hasAuth);
@@ -270,4 +275,3 @@ private:
     QQmlEngine* m_QmlEngine;
     AwdlController* m_AwdlController;
 };
-

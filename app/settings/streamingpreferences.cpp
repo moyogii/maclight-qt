@@ -60,13 +60,16 @@
 #define SER_AWDL_FIRSTRUN_SHOWN "awdlfirstrunshown"
 #define SER_HOTKEY_TOGGLE_STATS_MODS "hotkeyToggleStatsMods"
 #define SER_HOTKEY_TOGGLE_STATS_SCAN "hotkeyToggleStatsScan"
+#define SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS "hotkeyToggleMouseModeMods"
+#define SER_HOTKEY_TOGGLE_MOUSE_MODE_SCAN "hotkeyToggleMouseModeScan"
 #define SER_HOTKEY_EXIT_STREAM_MODS "hotkeyExitStreamMods"
 #define SER_HOTKEY_EXIT_STREAM_SCAN "hotkeyExitStreamScan"
 
 // Default hotkey modifiers: Ctrl+Alt+Shift (SDL KMOD_CTRL|KMOD_ALT|KMOD_SHIFT = 0x0C0|0x300|0x003 = 963)
 #define DEFAULT_HOTKEY_MODIFIERS 0x3C3
-// Default scancodes (SDL values): S=22, E=8
+// Default scancodes (SDL values): S=22, M=16, E=8
 #define DEFAULT_HOTKEY_TOGGLE_STATS_SCAN 22
+#define DEFAULT_HOTKEY_TOGGLE_MOUSE_MODE_SCAN 16
 #define DEFAULT_HOTKEY_EXIT_STREAM_SCAN 8
 
 #define CURRENT_DEFAULT_VER 2
@@ -187,6 +190,8 @@ void StreamingPreferences::reload()
 
     hotkeyToggleStatsModifiers = settings.value(SER_HOTKEY_TOGGLE_STATS_MODS, DEFAULT_HOTKEY_MODIFIERS).toInt();
     hotkeyToggleStatsScanCode = settings.value(SER_HOTKEY_TOGGLE_STATS_SCAN, DEFAULT_HOTKEY_TOGGLE_STATS_SCAN).toInt();
+    hotkeyToggleMouseModeModifiers = settings.value(SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS, DEFAULT_HOTKEY_MODIFIERS).toInt();
+    hotkeyToggleMouseModeScanCode = settings.value(SER_HOTKEY_TOGGLE_MOUSE_MODE_SCAN, DEFAULT_HOTKEY_TOGGLE_MOUSE_MODE_SCAN).toInt();
     hotkeyExitStreamModifiers = settings.value(SER_HOTKEY_EXIT_STREAM_MODS, DEFAULT_HOTKEY_MODIFIERS).toInt();
     hotkeyExitStreamScanCode = settings.value(SER_HOTKEY_EXIT_STREAM_SCAN, DEFAULT_HOTKEY_EXIT_STREAM_SCAN).toInt();
 
@@ -377,6 +382,8 @@ void StreamingPreferences::save()
     settings.setValue(SER_AWDL_FIRSTRUN_SHOWN, awdlFirstRunShown);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_MODS, hotkeyToggleStatsModifiers);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_SCAN, hotkeyToggleStatsScanCode);
+    settings.setValue(SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS, hotkeyToggleMouseModeModifiers);
+    settings.setValue(SER_HOTKEY_TOGGLE_MOUSE_MODE_SCAN, hotkeyToggleMouseModeScanCode);
     settings.setValue(SER_HOTKEY_EXIT_STREAM_MODS, hotkeyExitStreamModifiers);
     settings.setValue(SER_HOTKEY_EXIT_STREAM_SCAN, hotkeyExitStreamScanCode);
 }

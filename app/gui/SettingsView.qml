@@ -1335,7 +1335,9 @@ Flickable {
                     ToolTip.timeout: 10000
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("This enables seamless mouse control without capturing the client's mouse cursor. It is ideal for remote desktop usage but will not work in most games.") + " " +
-                                  qsTr("You can toggle this while streaming using Ctrl+Alt+Shift+M.") + "\n\n" +
+                                  qsTr("You can toggle this while streaming using %1.").arg(StreamingPreferences.hotkeyToString(
+                                                                                                  StreamingPreferences.hotkeyToggleMouseModeModifiers,
+                                                                                                  StreamingPreferences.hotkeyToggleMouseModeScanCode)) + "\n\n" +
                                   qsTr("NOTE: Due to a bug in GeForce Experience, this option may not work properly if your host PC has multiple monitors.")
                 }
 
@@ -1852,6 +1854,37 @@ Flickable {
                     spacing: 10
 
                     Label {
+                        text: qsTr("Toggle Mouse Mode:")
+                        font.pointSize: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Label {
+                        id: toggleMouseModeHotkeyDisplay
+                        text: StreamingPreferences.hotkeyToString(StreamingPreferences.hotkeyToggleMouseModeModifiers,
+                                                                   StreamingPreferences.hotkeyToggleMouseModeScanCode)
+                        font.pointSize: 12
+                        font.bold: true
+                        color: Material.accent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Button {
+                        text: qsTr("Change")
+                        onClicked: {
+                            toggleMouseModeHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleMouseModeModifiers
+                            toggleMouseModeHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleMouseModeScanCode
+                            toggleMouseModeHotkeyCaptureDialog.open()
+                        }
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Label {
                         text: qsTr("Exit Stream:")
                         font.pointSize: 12
                         anchors.verticalCenter: parent.verticalCenter
@@ -1884,6 +1917,8 @@ Flickable {
                         // Ctrl+Alt+Shift = 0x3C3 = 963
                         StreamingPreferences.hotkeyToggleStatsModifiers = 0x3C3
                         StreamingPreferences.hotkeyToggleStatsScanCode = 22  // SDL_SCANCODE_S
+                        StreamingPreferences.hotkeyToggleMouseModeModifiers = 0x3C3
+                        StreamingPreferences.hotkeyToggleMouseModeScanCode = 16  // SDL_SCANCODE_M
                         StreamingPreferences.hotkeyExitStreamModifiers = 0x3C3
                         StreamingPreferences.hotkeyExitStreamScanCode = 8    // SDL_SCANCODE_E
                     }

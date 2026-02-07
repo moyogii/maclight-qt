@@ -94,9 +94,9 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
     m_SpecialKeyCombos[KeyComboToggleStatsOverlay].enabled = true;
 
     m_SpecialKeyCombos[KeyComboToggleMouseMode].keyCombo = KeyComboToggleMouseMode;
-    m_SpecialKeyCombos[KeyComboToggleMouseMode].keyCode = SDLK_m;
-    m_SpecialKeyCombos[KeyComboToggleMouseMode].scanCode = SDL_SCANCODE_M;
-    m_SpecialKeyCombos[KeyComboToggleMouseMode].requiredModifiers = defaultMods;
+    m_SpecialKeyCombos[KeyComboToggleMouseMode].scanCode = static_cast<SDL_Scancode>(prefs.hotkeyToggleMouseModeScanCode);
+    m_SpecialKeyCombos[KeyComboToggleMouseMode].keyCode = SDL_GetKeyFromScancode(m_SpecialKeyCombos[KeyComboToggleMouseMode].scanCode);
+    m_SpecialKeyCombos[KeyComboToggleMouseMode].requiredModifiers = static_cast<Uint16>(prefs.hotkeyToggleMouseModeModifiers);
     m_SpecialKeyCombos[KeyComboToggleMouseMode].enabled = true;
 
     m_SpecialKeyCombos[KeyComboToggleCursorHide].keyCombo = KeyComboToggleCursorHide;

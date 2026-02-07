@@ -486,6 +486,15 @@ ApplicationWindow {
         }
     }
 
+    HotkeyCaptureDialog {
+        id: toggleMouseModeHotkeyCaptureDialog
+        hotkeyName: qsTr("Toggle Mouse Mode")
+        onHotkeyCaptured: {
+            StreamingPreferences.hotkeyToggleMouseModeModifiers = modifiers
+            StreamingPreferences.hotkeyToggleMouseModeScanCode = scanCode
+        }
+    }
+
     // This dialog appears when quitting via keyboard or gamepad button
     NavigableMessageDialog {
         id: quitConfirmationDialog
