@@ -887,6 +887,31 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
     }
 
     if (stats.receivedFps > 0) {
+        double networkLossPct = stats.totalFrames != 0 ?
+                                    (double)stats.networkDroppedFrames / stats.totalFrames * 100.0 :
+                                    0.0;
+        int displayFps = m_Pacer != nullptr ? m_Pacer->getDisplayFps() : 0;
+        char refreshRateStr[8];
+        if (displayFps > 0) {
+            snprintf(refreshRateStr, sizeof(refreshRateStr), "%d", displayFps);
+        }
+        else {
+            snprintf(refreshRateStr, sizeof(refreshRateStr), "--");
+        }
+
+        ret = snprintf(&output[offset],
+                       length - offset,
+                       "FPS %.1f  Hz %s  Loss %.2f%%\n",
+                       stats.renderedFps,
+                       refreshRateStr,
+                       networkLossPct);
+        if (ret < 0 || ret >= length - offset) {
+            SDL_assert(false);
+            return;
+        }
+
+        offset += ret;
+
         if (m_VideoDecoderCtx != nullptr) {
 #ifdef DISPLAY_BITRATE
             double avgVideoMbps = m_BwTracker.GetAverageMbps();
@@ -895,14 +920,13 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
 
             ret = snprintf(&output[offset],
                            length - offset,
-                           "Video stream: %dx%d %.2f FPS (Codec: %s)\n"
+                           "Stream %dx%d (%s)\n"
 #ifdef DISPLAY_BITRATE
-                           "Bitrate: %.1f Mbps, Peak (%us): %.1f\n"
+                           "Mbps %.1f  Peak(%us) %.1f\n"
 #endif
                            ,
                            m_VideoDecoderCtx->width,
                            m_VideoDecoderCtx->height,
-                           stats.totalFps,
                            codecString
 #ifdef DISPLAY_BITRATE
                            ,
@@ -921,9 +945,7 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
 
         ret = snprintf(&output[offset],
                        length - offset,
-                       "Incoming frame rate from network: %.2f FPS\n"
-                       "Decoding frame rate: %.2f FPS\n"
-                       "Rendering frame rate: %.2f FPS\n",
+                       "Net/Dec/Ren FPS %.1f/%.1f/%.1f\n",
                        stats.receivedFps,
                        stats.decodedFps,
                        stats.renderedFps);
@@ -938,7 +960,7 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
     if (stats.framesWithHostProcessingLatency > 0) {
         ret = snprintf(&output[offset],
                        length - offset,
-                       "Host processing latency min/max/average: %.1f/%.1f/%.1f ms\n",
+                       "Host Lat ms %.1f/%.1f/%.1f (min/max/avg)\n",
                        (float)stats.minHostProcessingLatency / 10,
                        (float)stats.maxHostProcessingLatency / 10,
                        (float)stats.totalHostProcessingLatency / 10 / stats.framesWithHostProcessingLatency);
@@ -952,6 +974,14 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
 
     if (stats.renderedFrames != 0) {
         char rttString[32];
+        double jitterLossPct = stats.decodedFrames != 0 ?
+                                   (double)stats.pacerDroppedFrames / stats.decodedFrames * 100.0 :
+                                   0.0;
+        double avgDecodeMs = stats.decodedFrames != 0 ?
+                                 (double)(stats.totalDecodeTimeUs / 1000.0) / stats.decodedFrames :
+                                 0.0;
+        double avgQueueMs = (double)(stats.totalPacerTimeUs / 1000.0) / stats.renderedFrames;
+        double avgRenderMs = (double)(stats.totalRenderTimeUs / 1000.0) / stats.renderedFrames;
 
         if (stats.lastRtt != 0) {
             snprintf(rttString, sizeof(rttString), "%u ms (variance: %u ms)", stats.lastRtt, stats.lastRttVariance);
@@ -962,18 +992,14 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
 
         ret = snprintf(&output[offset],
                        length - offset,
-                       "Frames dropped by your network connection: %.2f%%\n"
-                       "Frames dropped due to network jitter: %.2f%%\n"
-                       "Average network latency: %s\n"
-                       "Average decoding time: %.2f ms\n"
-                       "Average frame queue delay: %.2f ms\n"
-                       "Average rendering time (including monitor V-sync latency): %.2f ms\n",
-                       (float)stats.networkDroppedFrames / stats.totalFrames * 100,
-                       (float)stats.pacerDroppedFrames / stats.decodedFrames * 100,
+                       "Jitter Loss %.2f%%\n"
+                       "Ping %s\n"
+                       "Decode %.2f ms  Queue %.2f ms  Render %.2f ms\n",
+                       jitterLossPct,
                        rttString,
-                       (double)(stats.totalDecodeTimeUs / 1000.0) / stats.decodedFrames,
-                       (double)(stats.totalPacerTimeUs / 1000.0) / stats.renderedFrames,
-                       (double)(stats.totalRenderTimeUs / 1000.0) / stats.renderedFrames);
+                       avgDecodeMs,
+                       avgQueueMs,
+                       avgRenderMs);
         if (ret < 0 || ret >= length - offset) {
             SDL_assert(false);
             return;
@@ -2118,4 +2144,3 @@ void FFmpegVideoDecoder::renderFrameOnMainThread()
 {
     m_Pacer->renderOnMainThread();
 }
-

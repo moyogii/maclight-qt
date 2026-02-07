@@ -498,6 +498,8 @@ public:
             switch (type) {
             case Overlay::OverlayDebug:
                 [m_OverlayTextFields[type] setAlignment:NSTextAlignmentLeft];
+                [m_OverlayTextFields[type] setDrawsBackground:YES];
+                [m_OverlayTextFields[type] setBackgroundColor:[NSColor colorWithSRGBRed:0.0 green:0.0 blue:0.0 alpha:0.65]];
                 break;
             case Overlay::OverlayStatusUpdate:
                 [m_OverlayTextFields[type] setAlignment:NSTextAlignmentRight];
@@ -515,6 +517,30 @@ public:
 
         // Update text contents
         [m_OverlayTextFields[type] setStringValue: [NSString stringWithUTF8String:Session::get()->getOverlayManager().getOverlayText(type)]];
+
+        [m_OverlayTextFields[type] sizeToFit];
+
+        const CGFloat k_PaddingX = 8.0;
+        const CGFloat k_PaddingY = 4.0;
+        NSRect frame = [m_OverlayTextFields[type] frame];
+        frame.size.width += k_PaddingX * 2;
+        frame.size.height += k_PaddingY * 2;
+
+        NSRect bounds = m_StreamView.bounds;
+        switch (type) {
+        case Overlay::OverlayDebug:
+            frame.origin.x = 0;
+            frame.origin.y = bounds.size.height - frame.size.height;
+            break;
+        case Overlay::OverlayStatusUpdate:
+            frame.origin.x = bounds.size.width - frame.size.width;
+            frame.origin.y = 0;
+            break;
+        default:
+            break;
+        }
+
+        [m_OverlayTextFields[type] setFrame:frame];
 
         // Unhide if it's enabled
         [m_OverlayTextFields[type] setHidden: !Session::get()->getOverlayManager().isOverlayEnabled(type)];

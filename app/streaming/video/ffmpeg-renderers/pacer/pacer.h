@@ -43,6 +43,10 @@ public:
 
     void renderOnMainThread();
 
+    int getDisplayFps() const {
+        return m_DisplayFps;
+    }
+
 private:
     static int vsyncThread(void* context);
 

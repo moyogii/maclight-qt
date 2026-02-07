@@ -71,7 +71,9 @@ public:
           m_TextureCache(nullptr),
           m_CscParamsBuffer(nullptr),
           m_VideoVertexBuffer(nullptr),
+          m_OverlayBackgroundTexture(nullptr),
           m_OverlayTextures{},
+          m_OverlayVisibleWidths{},
           m_OverlayLock(0),
           m_VideoPipelineState(nullptr),
           m_OverlayPipelineState(nullptr),
@@ -127,6 +129,10 @@ public:
 
         if (m_VideoVertexBuffer != nullptr) {
             [m_VideoVertexBuffer release];
+        }
+
+        if (m_OverlayBackgroundTexture != nullptr) {
+            [m_OverlayBackgroundTexture release];
         }
 
         if (m_VideoPipelineState != nullptr) {
@@ -609,10 +615,12 @@ public:
         // Now draw any overlays that are enabled
         for (int i = 0; i < Overlay::OverlayMax; i++) {
             id<MTLTexture> overlayTexture = nullptr;
+            int overlayVisibleWidth = 0;
 
             // Try to acquire a reference on the overlay texture
             SDL_AtomicLock(&m_OverlayLock);
             overlayTexture = [m_OverlayTextures[i] retain];
+            overlayVisibleWidth = m_OverlayVisibleWidths[i];
             SDL_AtomicUnlock(&m_OverlayLock);
 
             if (overlayTexture) {
@@ -630,6 +638,35 @@ public:
 
                 renderRect.w = overlayTexture.width;
                 renderRect.h = overlayTexture.height;
+
+                if (i == Overlay::OverlayDebug && m_OverlayBackgroundTexture != nullptr) {
+                    constexpr float k_BackgroundPaddingX = 8.0f;
+                    constexpr float k_BackgroundPaddingY = 4.0f;
+                    int overlayTextWidth = overlayVisibleWidth > 0 ? overlayVisibleWidth : (int)overlayTexture.width;
+
+                    SDL_FRect backgroundRect = renderRect;
+                    backgroundRect.x = SDL_max(0.0f, backgroundRect.x - k_BackgroundPaddingX);
+                    backgroundRect.y = SDL_max(0.0f, backgroundRect.y - k_BackgroundPaddingY);
+                    backgroundRect.w = SDL_min((float)m_LastDrawableWidth - backgroundRect.x,
+                                                (float)overlayTextWidth + (k_BackgroundPaddingX * 2));
+                    backgroundRect.h = SDL_min((float)m_LastDrawableHeight - backgroundRect.y,
+                                                backgroundRect.h + (k_BackgroundPaddingY * 2));
+
+                    StreamUtils::screenSpaceToNormalizedDeviceCoords(&backgroundRect, m_LastDrawableWidth, m_LastDrawableHeight);
+
+                    Vertex bgVerts[] =
+                    {
+                        { { backgroundRect.x, backgroundRect.y, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+                        { { backgroundRect.x, backgroundRect.y+backgroundRect.h, 0.0f, 1.0f }, { 0.0f, 0} },
+                        { { backgroundRect.x+backgroundRect.w, backgroundRect.y, 0.0f, 1.0f }, { 1.0f, 1.0f} },
+                        { { backgroundRect.x+backgroundRect.w, backgroundRect.y+backgroundRect.h, 0.0f, 1.0f }, { 1.0f, 0} },
+                    };
+
+                    [renderEncoder setRenderPipelineState:m_OverlayPipelineState];
+                    [renderEncoder setFragmentTexture:m_OverlayBackgroundTexture atIndex:0];
+                    [renderEncoder setVertexBytes:bgVerts length:sizeof(bgVerts) atIndex:0];
+                    [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:SDL_arraysize(bgVerts)];
+                }
 
                 // Convert screen space to normalized device coordinates
                 StreamUtils::screenSpaceToNormalizedDeviceCoords(&renderRect, m_LastDrawableWidth, m_LastDrawableHeight);
@@ -887,6 +924,32 @@ public:
 
         // Create a command queue for submission
         m_CommandQueue = [m_MetalLayer.device newCommandQueue];
+        if (m_CommandQueue == nullptr) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to create command queue");
+            return false;
+        }
+
+        auto overlayBackgroundDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                                                          width:1
+                                                                                         height:1
+                                                                                      mipmapped:NO];
+        overlayBackgroundDesc.cpuCacheMode = MTLCPUCacheModeWriteCombined;
+        overlayBackgroundDesc.storageMode = m_MetalLayer.device.hasUnifiedMemory ? MTLStorageModeShared : MTLStorageModeManaged;
+        overlayBackgroundDesc.usage = MTLTextureUsageShaderRead;
+        m_OverlayBackgroundTexture = [m_MetalLayer.device newTextureWithDescriptor:overlayBackgroundDesc];
+        if (m_OverlayBackgroundTexture == nullptr) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to create overlay background texture");
+            return false;
+        }
+
+        const unsigned char bgPixel[] = {0x00, 0x00, 0x00, 0xB0};
+        [m_OverlayBackgroundTexture replaceRegion:MTLRegionMake2D(0, 0, 1, 1)
+                                      mipmapLevel:0
+                                        withBytes:bgPixel
+                                      bytesPerRow:sizeof(bgPixel)];
+
         return true;
     }}
 
@@ -899,9 +962,27 @@ public:
             return;
         }
 
+        int overlayVisibleWidth = 0;
+        if (newSurface != nullptr) {
+            SDL_assert(!SDL_MUSTLOCK(newSurface));
+            SDL_assert(newSurface->format->format == SDL_PIXELFORMAT_ARGB8888);
+
+            Uint32 alphaMask = newSurface->format->Amask;
+            for (int y = 0; y < newSurface->h; y++) {
+                Uint32* row = reinterpret_cast<Uint32*>(reinterpret_cast<Uint8*>(newSurface->pixels) + (y * newSurface->pitch));
+                for (int x = newSurface->w - 1; x >= 0; x--) {
+                    if ((row[x] & alphaMask) != 0) {
+                        overlayVisibleWidth = SDL_max(overlayVisibleWidth, x + 1);
+                        break;
+                    }
+                }
+            }
+        }
+
         SDL_AtomicLock(&m_OverlayLock);
         auto oldTexture = m_OverlayTextures[type];
         m_OverlayTextures[type] = nullptr;
+        m_OverlayVisibleWidths[type] = 0;
         SDL_AtomicUnlock(&m_OverlayLock);
 
         [oldTexture release];
@@ -937,6 +1018,7 @@ public:
 
         SDL_AtomicLock(&m_OverlayLock);
         m_OverlayTextures[type] = newTexture;
+        m_OverlayVisibleWidths[type] = overlayVisibleWidth;
         SDL_AtomicUnlock(&m_OverlayLock);
     }}
 
@@ -1109,7 +1191,9 @@ private:
     CVMetalTextureCacheRef m_TextureCache;
     id<MTLBuffer> m_CscParamsBuffer;
     id<MTLBuffer> m_VideoVertexBuffer;
+    id<MTLTexture> m_OverlayBackgroundTexture;
     id<MTLTexture> m_OverlayTextures[Overlay::OverlayMax];
+    int m_OverlayVisibleWidths[Overlay::OverlayMax];
     SDL_SpinLock m_OverlayLock;
     id<MTLRenderPipelineState> m_VideoPipelineState;
     id<MTLRenderPipelineState> m_OverlayPipelineState;
