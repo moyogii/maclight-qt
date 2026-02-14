@@ -3,6 +3,9 @@
 #include "utils.h"
 #include "streaming/session.h"
 
+#include <QtGlobal>
+#include <QString>
+
 #include <h264_stream.h>
 
 extern "C" {
@@ -911,6 +914,19 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
         }
 
         offset += ret;
+
+        // Add system key capture mode
+        if (Session::get() != nullptr && Session::get()->getInputHandler() != nullptr) {
+            ret = snprintf(&output[offset],
+                           length - offset,
+                           "Sys Keys: %s\n",
+                           Session::get()->getInputHandler()->getCaptureSystemKeysModeString().toUtf8().constData());
+            if (ret < 0 || ret >= length - offset) {
+                SDL_assert(false);
+                return;
+            }
+            offset += ret;
+        }
     }
 }
 

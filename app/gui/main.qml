@@ -495,6 +495,15 @@ ApplicationWindow {
         }
     }
 
+    HotkeyCaptureDialog {
+        id: toggleCaptureSysKeysHotkeyCaptureDialog
+        hotkeyName: qsTr("Toggle Capture System Keys")
+        onHotkeyCaptured: {
+            StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers = modifiers
+            StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode = scanCode
+        }
+    }
+
     // This dialog appears when quitting via keyboard or gamepad button
     NavigableMessageDialog {
         id: quitConfirmationDialog

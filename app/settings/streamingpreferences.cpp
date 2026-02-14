@@ -64,13 +64,16 @@
 #define SER_HOTKEY_TOGGLE_MOUSE_MODE_SCAN "hotkeyToggleMouseModeScan"
 #define SER_HOTKEY_EXIT_STREAM_MODS "hotkeyExitStreamMods"
 #define SER_HOTKEY_EXIT_STREAM_SCAN "hotkeyExitStreamScan"
+#define SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_MODS "hotkeyToggleCaptureSysKeysMods"
+#define SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN "hotkeyToggleCaptureSysKeysScan"
 
 // Default hotkey modifiers: Ctrl+Alt+Shift (SDL KMOD_CTRL|KMOD_ALT|KMOD_SHIFT = 0x0C0|0x300|0x003 = 963)
 #define DEFAULT_HOTKEY_MODIFIERS 0x3C3
-// Default scancodes (SDL values): S=22, M=16, E=8
+// Default scancodes (SDL values): S=22, M=16, E=8, K=14
 #define DEFAULT_HOTKEY_TOGGLE_STATS_SCAN 22
 #define DEFAULT_HOTKEY_TOGGLE_MOUSE_MODE_SCAN 16
 #define DEFAULT_HOTKEY_EXIT_STREAM_SCAN 8
+#define DEFAULT_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN 14
 
 #define CURRENT_DEFAULT_VER 2
 
@@ -194,6 +197,8 @@ void StreamingPreferences::reload()
     hotkeyToggleMouseModeScanCode = settings.value(SER_HOTKEY_TOGGLE_MOUSE_MODE_SCAN, DEFAULT_HOTKEY_TOGGLE_MOUSE_MODE_SCAN).toInt();
     hotkeyExitStreamModifiers = settings.value(SER_HOTKEY_EXIT_STREAM_MODS, DEFAULT_HOTKEY_MODIFIERS).toInt();
     hotkeyExitStreamScanCode = settings.value(SER_HOTKEY_EXIT_STREAM_SCAN, DEFAULT_HOTKEY_EXIT_STREAM_SCAN).toInt();
+    hotkeyToggleCaptureSysKeysModifiers = settings.value(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_MODS, DEFAULT_HOTKEY_MODIFIERS).toInt();
+    hotkeyToggleCaptureSysKeysScanCode = settings.value(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN, DEFAULT_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN).toInt();
 
     // Perform default settings updates as required based on last default version
     if (defaultVer < 1) {
@@ -386,6 +391,8 @@ void StreamingPreferences::save()
     settings.setValue(SER_HOTKEY_TOGGLE_MOUSE_MODE_SCAN, hotkeyToggleMouseModeScanCode);
     settings.setValue(SER_HOTKEY_EXIT_STREAM_MODS, hotkeyExitStreamModifiers);
     settings.setValue(SER_HOTKEY_EXIT_STREAM_SCAN, hotkeyExitStreamScanCode);
+    settings.setValue(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_MODS, hotkeyToggleCaptureSysKeysModifiers);
+    settings.setValue(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN, hotkeyToggleCaptureSysKeysScanCode);
 }
 
 int StreamingPreferences::getDefaultBitrate(int width, int height, int fps, bool yuv444)

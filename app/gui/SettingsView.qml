@@ -1885,6 +1885,37 @@ Flickable {
                     spacing: 10
 
                     Label {
+                        text: qsTr("Toggle Capture System Keys:")
+                        font.pointSize: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Label {
+                        id: toggleCaptureSysKeysHotkeyDisplay
+                        text: StreamingPreferences.hotkeyToString(StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers,
+                                                                   StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode)
+                        font.pointSize: 12
+                        font.bold: true
+                        color: Material.accent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Button {
+                        text: qsTr("Change")
+                        onClicked: {
+                            toggleCaptureSysKeysHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers
+                            toggleCaptureSysKeysHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode
+                            toggleCaptureSysKeysHotkeyCaptureDialog.open()
+                        }
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Label {
                         text: qsTr("Exit Stream:")
                         font.pointSize: 12
                         anchors.verticalCenter: parent.verticalCenter
@@ -1919,6 +1950,8 @@ Flickable {
                         StreamingPreferences.hotkeyToggleStatsScanCode = 22  // SDL_SCANCODE_S
                         StreamingPreferences.hotkeyToggleMouseModeModifiers = 0x3C3
                         StreamingPreferences.hotkeyToggleMouseModeScanCode = 16  // SDL_SCANCODE_M
+                        StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers = 0x3C3
+                        StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode = 14  // SDL_SCANCODE_K
                         StreamingPreferences.hotkeyExitStreamModifiers = 0x3C3
                         StreamingPreferences.hotkeyExitStreamScanCode = 8    // SDL_SCANCODE_E
                     }

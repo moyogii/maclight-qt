@@ -142,6 +142,8 @@ public:
 
     bool isCaptureActive();
 
+    QString getCaptureSystemKeysModeString();
+
     bool isSystemKeyCaptureActive();
 
     void setCaptureActive(bool active);
@@ -166,6 +168,7 @@ private:
         KeyComboToggleMinimize,
         KeyComboPasteText,
         KeyComboTogglePointerRegionLock,
+        KeyComboToggleCaptureSysKeys,
         KeyComboQuitAndExit,
         KeyComboMax
     };

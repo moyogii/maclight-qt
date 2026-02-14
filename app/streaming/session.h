@@ -116,12 +116,17 @@ public:
         return s_ActiveSession;
     }
 
-    Overlay::OverlayManager& getOverlayManager()
-    {
-        return m_OverlayManager;
-    }
+Overlay::OverlayManager& getOverlayManager()
+{
+    return m_OverlayManager;
+}
 
-    void flushWindowEvents();
+SdlInputHandler* getInputHandler()
+{
+    return m_InputHandler;
+}
+
+void flushWindowEvents();
 
     void setShouldExit(bool quitHostApp = false);
 

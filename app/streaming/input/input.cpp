@@ -99,6 +99,12 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
     m_SpecialKeyCombos[KeyComboToggleMouseMode].requiredModifiers = static_cast<Uint16>(prefs.hotkeyToggleMouseModeModifiers);
     m_SpecialKeyCombos[KeyComboToggleMouseMode].enabled = true;
 
+    m_SpecialKeyCombos[KeyComboToggleCaptureSysKeys].keyCombo = KeyComboToggleCaptureSysKeys;
+    m_SpecialKeyCombos[KeyComboToggleCaptureSysKeys].scanCode = static_cast<SDL_Scancode>(prefs.hotkeyToggleCaptureSysKeysScanCode);
+    m_SpecialKeyCombos[KeyComboToggleCaptureSysKeys].keyCode = SDL_GetKeyFromScancode(m_SpecialKeyCombos[KeyComboToggleCaptureSysKeys].scanCode);
+    m_SpecialKeyCombos[KeyComboToggleCaptureSysKeys].requiredModifiers = static_cast<Uint16>(prefs.hotkeyToggleCaptureSysKeysModifiers);
+    m_SpecialKeyCombos[KeyComboToggleCaptureSysKeys].enabled = true;
+
     m_SpecialKeyCombos[KeyComboToggleCursorHide].keyCombo = KeyComboToggleCursorHide;
     m_SpecialKeyCombos[KeyComboToggleCursorHide].keyCode = SDLK_c;
     m_SpecialKeyCombos[KeyComboToggleCursorHide].scanCode = SDL_SCANCODE_C;
@@ -326,18 +332,32 @@ bool SdlInputHandler::isCaptureActive()
     return m_FakeCaptureActive;
 }
 
+QString SdlInputHandler::getCaptureSystemKeysModeString()
+{
+    switch (m_CaptureSystemKeysMode) {
+    case StreamingPreferences::CSK_OFF:
+        return "Off";
+    case StreamingPreferences::CSK_FULLSCREEN:
+        return "Fullscreen";
+    case StreamingPreferences::CSK_ALWAYS:
+        return "Always";
+    default:
+        return "Unknown";
+    }
+}
+
 void SdlInputHandler::updateKeyboardGrabState()
 {
-    if (m_CaptureSystemKeysMode == StreamingPreferences::CSK_OFF) {
-        return;
-    }
+    bool shouldGrab = false;
 
-    bool shouldGrab = isCaptureActive();
-    Uint32 windowFlags = SDL_GetWindowFlags(m_Window);
-    if (m_CaptureSystemKeysMode == StreamingPreferences::CSK_FULLSCREEN &&
-            !(windowFlags & SDL_WINDOW_FULLSCREEN)) {
-        // Ungrab if it's fullscreen only and we left fullscreen
-        shouldGrab = false;
+    if (m_CaptureSystemKeysMode != StreamingPreferences::CSK_OFF) {
+        shouldGrab = isCaptureActive();
+        Uint32 windowFlags = SDL_GetWindowFlags(m_Window);
+        if (m_CaptureSystemKeysMode == StreamingPreferences::CSK_FULLSCREEN &&
+                !(windowFlags & SDL_WINDOW_FULLSCREEN)) {
+            // Ungrab if it's fullscreen only and we left fullscreen
+            shouldGrab = false;
+        }
     }
 
 #if SDL_VERSION_ATLEAST(2, 0, 15)
