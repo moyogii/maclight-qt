@@ -91,8 +91,6 @@ SOURCES += \
     gui/computermodel.cpp \
     gui/appmodel.cpp \
     streaming/bandwidth.cpp \
-    streaming/streamutils.cpp \
-    backend/autoupdatechecker.cpp \
     path.cpp \
     settings/mappingmanager.cpp \
     gui/sdlgamepadkeynavigation.cpp \
@@ -130,7 +128,6 @@ HEADERS += \
     streaming/video/decoder.h \
     streaming/bandwidth.h \
     streaming/streamutils.h \
-    backend/autoupdatechecker.h \
     path.h \
     settings/mappingmanager.h \
     gui/sdlgamepadkeynavigation.h \

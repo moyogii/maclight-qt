@@ -5,7 +5,6 @@ import QtQuick.Window 2.2
 import QtQuick.Controls.Material 2.2
 
 import ComputerManager 1.0
-import AutoUpdateChecker 1.0
 import StreamingPreferences 1.0
 import SystemProperties 1.0
 import SdlGamepadKeyNavigation 1.0
@@ -334,44 +333,6 @@ ApplicationWindow {
 
                 onClicked: {
                     addPcDialog.open()
-                }
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
-                property string browserUrl: ""
-
-                id: updateButton
-
-                iconSource: "qrc:/res/update.svg"
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered || visible
-
-                // Invisible until we get a callback notifying us that
-                // an update is available
-                visible: false
-
-                onClicked: {
-                    if (SystemProperties.hasBrowser) {
-                        Qt.openUrlExternally(browserUrl);
-                    }
-                }
-
-                function updateAvailable(version, url)
-                {
-                    ToolTip.text = qsTr("Update available for Moonlight: Version %1").arg(version)
-                    updateButton.browserUrl = url
-                    updateButton.visible = true
-                }
-
-                Component.onCompleted: {
-                    AutoUpdateChecker.onUpdateAvailable.connect(updateAvailable)
-                    AutoUpdateChecker.start()
                 }
 
                 Keys.onDownPressed: {

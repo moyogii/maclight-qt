@@ -36,7 +36,6 @@
 #include "utils.h"
 #include "gui/computermodel.h"
 #include "gui/appmodel.h"
-#include "backend/autoupdatechecker.h"
 #include "backend/computermanager.h"
 #include "backend/systemproperties.h"
 #include "streaming/session.h"
@@ -546,11 +545,6 @@ int main(int argc, char *argv[])
                                               [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
                                                   return new ComputerManager(StreamingPreferences::get(qmlEngine));
                                               });
-    qmlRegisterSingletonType<AutoUpdateChecker>("AutoUpdateChecker", 1, 0,
-                                                "AutoUpdateChecker",
-                                                [](QQmlEngine*, QJSEngine*) -> QObject* {
-                                                    return new AutoUpdateChecker();
-                                                });
     qmlRegisterSingletonType<SystemProperties>("SystemProperties", 1, 0,
                                                "SystemProperties",
                                                [](QQmlEngine*, QJSEngine*) -> QObject* {
