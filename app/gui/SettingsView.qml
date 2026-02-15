@@ -1770,8 +1770,7 @@ Flickable {
                     ToolTip.text: qsTr("Display real-time stream performance information while streaming.") + "\n\n" +
                                   qsTr("You can toggle it at any time while streaming using %1 or Select+L1+R1+X.").arg(StreamingPreferences.hotkeyToString(
                                                                                                                                 StreamingPreferences.hotkeyToggleStatsModifiers,
-                                                                                                                                StreamingPreferences.hotkeyToggleStatsScanCode)) + "\n\n" +
-                                  qsTr("The performance overlay is not supported on Steam Link or Raspberry Pi.")
+                                                                                                                                StreamingPreferences.hotkeyToggleStatsScanCode)) + "\n"
                 }
 
                 Button {
