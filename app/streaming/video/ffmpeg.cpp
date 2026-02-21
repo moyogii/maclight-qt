@@ -723,6 +723,15 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
     const char* codecString;
     int ret;
 
+    double hostAvgMs = 0;
+    bool hostAvgAvailable = false;
+    double pingRttMs = 0;
+    bool pingRttAvailable = false;
+    double decodeAvgMs = 0;
+    double queueAvgMs = 0;
+    double renderAvgMs = 0;
+    bool timingAvailable = false;
+
     // Start with an empty string
     output[offset] = 0;
 
@@ -866,12 +875,15 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
     }
 
     if (stats.framesWithHostProcessingLatency > 0) {
+        hostAvgMs = stats.totalHostProcessingLatency / 10.0 / stats.framesWithHostProcessingLatency;
+        hostAvgAvailable = true;
+
         ret = snprintf(&output[offset],
                        length - offset,
                        "Host Lat ms %.1f/%.1f/%.1f (min/max/avg)\n",
                        (float)stats.minHostProcessingLatency / 10,
                        (float)stats.maxHostProcessingLatency / 10,
-                       (float)stats.totalHostProcessingLatency / 10 / stats.framesWithHostProcessingLatency);
+                       hostAvgMs);
         if (ret < 0 || ret >= length - offset) {
             SDL_assert(false);
             return;
@@ -885,13 +897,18 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
         double jitterLossPct = stats.decodedFrames != 0 ?
                                    (double)stats.pacerDroppedFrames / stats.decodedFrames * 100.0 :
                                    0.0;
-        double avgDecodeMs = stats.decodedFrames != 0 ?
-                                 (double)(stats.totalDecodeTimeUs / 1000.0) / stats.decodedFrames :
-                                 0.0;
-        double avgQueueMs = (double)(stats.totalPacerTimeUs / 1000.0) / stats.renderedFrames;
-        double avgRenderMs = (double)(stats.totalRenderTimeUs / 1000.0) / stats.renderedFrames;
+        decodeAvgMs = stats.decodedFrames != 0 ?
+                        (double)(stats.totalDecodeTimeUs / 1000.0) / stats.decodedFrames :
+                        0.0;
+        queueAvgMs = (double)(stats.totalPacerTimeUs / 1000.0) / stats.renderedFrames;
+        renderAvgMs = (double)(stats.totalRenderTimeUs / 1000.0) / stats.renderedFrames;
+        if (stats.decodedFrames != 0) {
+            timingAvailable = true;
+        }
 
         if (stats.lastRtt != 0) {
+            pingRttMs = stats.lastRtt;
+            pingRttAvailable = true;
             snprintf(rttString, sizeof(rttString), "%u ms (variance: %u ms)", stats.lastRtt, stats.lastRttVariance);
         }
         else {
@@ -905,15 +922,44 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
                        "Decode %.2f ms  Queue %.2f ms  Render %.2f ms\n",
                        jitterLossPct,
                        rttString,
-                       avgDecodeMs,
-                       avgQueueMs,
-                       avgRenderMs);
+                       decodeAvgMs,
+                       queueAvgMs,
+                       renderAvgMs);
         if (ret < 0 || ret >= length - offset) {
             SDL_assert(false);
             return;
         }
 
         offset += ret;
+
+        double totalLatencyMs = 0;
+        bool hasLatencyData = false;
+
+        if (hostAvgAvailable) {
+            totalLatencyMs += hostAvgMs;
+            hasLatencyData = true;
+        }
+        if (pingRttAvailable) {
+            totalLatencyMs += pingRttMs;
+            hasLatencyData = true;
+        }
+        if (timingAvailable) {
+            totalLatencyMs += decodeAvgMs + queueAvgMs + renderAvgMs;
+            hasLatencyData = true;
+        }
+
+        if (hasLatencyData) {
+            ret = snprintf(&output[offset],
+                           length - offset,
+                           "Total Latency: %.2f ms\n",
+                           totalLatencyMs);
+            if (ret < 0 || ret >= length - offset) {
+                SDL_assert(false);
+                return;
+            }
+
+            offset += ret;
+        }
 
         // Add system key capture mode
         if (Session::get() != nullptr && Session::get()->getInputHandler() != nullptr) {
