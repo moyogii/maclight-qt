@@ -79,6 +79,8 @@ desktop.ini
 # Project documentation (auto-generated)
 CLAUDE.md
 /.roo
+
+/plans
 *.log
 .roo/rules/coding-standards.md
 .roo/rules-code/implementation-rules.md
