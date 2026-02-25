@@ -35,37 +35,37 @@ pushd $BUILD_FOLDER
 qmake $SOURCE_ROOT/moonlight-qt.pro || fail "Qmake failed!"
 popd
 
-echo Compiling Moonlight in $BUILD_CONFIG configuration
+echo Compiling Maclight in $BUILD_CONFIG configuration
 pushd $BUILD_FOLDER
 make -j$(sysctl -n hw.logicalcpu) $(echo "$BUILD_CONFIG" | tr '[:upper:]' '[:lower:]') || fail "Make failed!"
 popd
 
 echo Saving dSYM file
 pushd $BUILD_FOLDER
-dsymutil app/Moonlight.app/Contents/MacOS/Moonlight -o Moonlight-$VERSION.dsym || fail "dSYM creation failed!"
-cp -R Moonlight-$VERSION.dsym $INSTALLER_FOLDER || fail "dSYM copy failed!"
+dsymutil app/Maclight.app/Contents/MacOS/Maclight -o Maclight-$VERSION.dsym || fail "dSYM creation failed!"
+cp -R Maclight-$VERSION.dsym $INSTALLER_FOLDER || fail "dSYM copy failed!"
 popd
 
 echo Creating app bundle
 EXTRA_ARGS=
 if [ "$BUILD_CONFIG" == "Debug" ]; then EXTRA_ARGS="$EXTRA_ARGS -use-debug-libs"; fi
 echo Extra deployment arguments: $EXTRA_ARGS
-macdeployqt $BUILD_FOLDER/app/Moonlight.app $EXTRA_ARGS -qmldir=$SOURCE_ROOT/app/gui -appstore-compliant || fail "macdeployqt failed!"
+macdeployqt $BUILD_FOLDER/app/Maclight.app $EXTRA_ARGS -qmldir=$SOURCE_ROOT/app/gui -appstore-compliant || fail "macdeployqt failed!"
 
 echo Removing dSYM files from app bundle
-find $BUILD_FOLDER/app/Moonlight.app/ -name '*.dSYM' | xargs rm -rf
+find $BUILD_FOLDER/app/Maclight.app/ -name '*.dSYM' | xargs rm -rf
 
 echo Signing app bundle
 # Strip existing signatures from embedded code (required for linker-signed libs)
-find "$BUILD_FOLDER/app/Moonlight.app/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.framework" \) -exec codesign --remove-signature {} \; 2>/dev/null || true
-codesign --remove-signature "$BUILD_FOLDER/app/Moonlight.app/Contents/MacOS/Moonlight" 2>/dev/null || true
+find "$BUILD_FOLDER/app/Maclight.app/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.framework" \) -exec codesign --remove-signature {} \; 2>/dev/null || true
+codesign --remove-signature "$BUILD_FOLDER/app/Maclight.app/Contents/MacOS/Maclight" 2>/dev/null || true
 # Note: --options runtime is NOT used because it's incompatible with linker-signed
 # libraries on macOS 15+ and causes "different Team IDs" errors at runtime
-codesign --force --deep --sign - $BUILD_FOLDER/app/Moonlight.app || fail "Signing failed!"
-xattr -cr $BUILD_FOLDER/app/Moonlight.app
+codesign --force --deep --sign - $BUILD_FOLDER/app/Maclight.app || fail "Signing failed!"
+xattr -cr $BUILD_FOLDER/app/Maclight.app
 
 echo Creating DMG
-create-dmg $BUILD_FOLDER/app/Moonlight.app $INSTALLER_FOLDER --overwrite --dmg-title="Moonlight"
+create-dmg $BUILD_FOLDER/app/Maclight.app $INSTALLER_FOLDER --overwrite --dmg-title="Maclight"
 case $? in
   0) ;;
   2) ;;
@@ -73,7 +73,7 @@ case $? in
 esac
 
 # Rename to include version
-mv $INSTALLER_FOLDER/Moonlight*.dmg $INSTALLER_FOLDER/Moonlight-$VERSION.dmg 2>/dev/null || true
+mv $INSTALLER_FOLDER/Maclight*.dmg $INSTALLER_FOLDER/Maclight-$VERSION.dmg 2>/dev/null || true
 
 echo Build successful
-echo "DMG: $INSTALLER_FOLDER/Moonlight-$VERSION.dmg"
+echo "DMG: $INSTALLER_FOLDER/Maclight-$VERSION.dmg"

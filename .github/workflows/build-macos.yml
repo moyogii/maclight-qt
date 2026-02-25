@@ -80,14 +80,14 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Moonlight-v${{ steps.version.outputs.version }}-macOS
-        path: build/installer-Release/Moonlight-${{ steps.version.outputs.version }}.dmg
+        name: Maclight-v${{ steps.version.outputs.version }}-macOS
+        path: build/installer-Release/Maclight-${{ steps.version.outputs.version }}.dmg
         compression-level: 0
 
     - name: Upload Symbols
       uses: actions/upload-artifact@v4
       with:
-        name: Moonlight-v${{ steps.version.outputs.version }}-symbols
+        name: Maclight-v${{ steps.version.outputs.version }}-symbols
         path: build/installer-Release/*.dsym/*
 
     - name: Create Release
@@ -95,10 +95,10 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.version.outputs.version }}
-        name: "Moonlight v${{ steps.version.outputs.version }}"
+        name: "Maclight v${{ steps.version.outputs.version }}"
         body_path: changelog.md
         files: |
-          build/installer-Release/Moonlight-${{ steps.version.outputs.version }}.dmg
+          build/installer-Release/Maclight-${{ steps.version.outputs.version }}.dmg
         draft: false
         prerelease: false
         make_latest: true

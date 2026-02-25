@@ -1,0 +1,19 @@
+<!--?xml version="1.0" encoding="UTF-8"?-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <g fill="#FFFFFF">
+    <!-- Center diamond -->
+    <polygon points="512,320 704,512 512,704 320,512"></polygon>
+
+    <!-- Long cardinal rays -->
+    <polygon points="512,96 556,300 468,300"></polygon>
+    <polygon points="928,512 724,556 724,468"></polygon>
+    <polygon points="512,928 556,724 468,724"></polygon>
+    <polygon points="96,512 300,556 300,468"></polygon>
+
+    <!-- Short diagonal rays -->
+    <polygon points="768,256 676,388 612,324"></polygon>
+    <polygon points="768,768 612,700 676,636"></polygon>
+    <polygon points="256,768 348,636 412,700"></polygon>
+    <polygon points="256,256 412,324 348,388"></polygon>
+  </g>
+</svg>

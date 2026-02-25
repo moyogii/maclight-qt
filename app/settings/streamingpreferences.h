@@ -146,6 +146,7 @@ public:
     Q_PROPERTY(bool swapFaceButtons MEMBER swapFaceButtons NOTIFY swapFaceButtonsChanged)
     Q_PROPERTY(bool keepAwake MEMBER keepAwake NOTIFY keepAwakeChanged)
     Q_PROPERTY(CaptureSysKeysMode captureSysKeysMode MEMBER captureSysKeysMode NOTIFY captureSysKeysModeChanged)
+    Q_PROPERTY(bool swapWinAltKeys MEMBER swapWinAltKeys NOTIFY swapWinAltKeysChanged)
     Q_PROPERTY(Language language MEMBER language NOTIFY languageChanged)
     Q_PROPERTY(bool enableClipboardSync MEMBER enableClipboardSync NOTIFY enableClipboardSyncChanged)
     Q_PROPERTY(bool awdlEnabled MEMBER awdlEnabled NOTIFY awdlEnabledChanged)
@@ -202,6 +203,7 @@ public:
     bool swapFaceButtons;
     bool keepAwake;
     bool enableClipboardSync;
+    bool swapWinAltKeys;
     bool awdlEnabled;
     bool awdlFirstRunShown;
     int hotkeyToggleStatsModifiers;
@@ -258,6 +260,7 @@ signals:
     void reverseScrollDirectionChanged();
     void swapFaceButtonsChanged();
     void captureSysKeysModeChanged();
+    void swapWinAltKeysChanged();
     void keepAwakeChanged();
     void languageChanged();
     void enableClipboardSyncChanged();

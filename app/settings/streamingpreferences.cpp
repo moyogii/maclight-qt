@@ -54,6 +54,7 @@
 #define SER_SWAPFACEBUTTONS "swapfacebuttons"
 #define SER_CAPTURESYSKEYS "capturesyskeys"
 #define SER_KEEPAWAKE "keepawake"
+#define SER_SWAPWINALTKEYS "swapwinaltkeys"
 #define SER_LANGUAGE "language"
 #define SER_CLIPBOARDSYNC "clipboardsync"
 #define SER_AWDL_ENABLED "awdlenabled"
@@ -169,6 +170,7 @@ void StreamingPreferences::reload()
     reverseScrollDirection = settings.value(SER_REVERSESCROLL, false).toBool();
     swapFaceButtons = settings.value(SER_SWAPFACEBUTTONS, false).toBool();
     keepAwake = settings.value(SER_KEEPAWAKE, true).toBool();
+    swapWinAltKeys = settings.value(SER_SWAPWINALTKEYS, false).toBool();
     enableClipboardSync = settings.value(SER_CLIPBOARDSYNC, true).toBool();
     awdlEnabled = settings.value(SER_AWDL_ENABLED, false).toBool();
     awdlFirstRunShown = settings.value(SER_AWDL_FIRSTRUN_SHOWN, false).toBool();
@@ -381,6 +383,7 @@ void StreamingPreferences::save()
     settings.setValue(SER_REVERSESCROLL, reverseScrollDirection);
     settings.setValue(SER_SWAPFACEBUTTONS, swapFaceButtons);
     settings.setValue(SER_CAPTURESYSKEYS, captureSysKeysMode);
+    settings.setValue(SER_SWAPWINALTKEYS, swapWinAltKeys);
     settings.setValue(SER_KEEPAWAKE, keepAwake);
     settings.setValue(SER_CLIPBOARDSYNC, enableClipboardSync);
     settings.setValue(SER_AWDL_ENABLED, awdlEnabled);

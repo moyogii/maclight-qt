@@ -1456,6 +1456,24 @@ Flickable {
                         StreamingPreferences.reverseScrollDirection = checked
                     }
                 }
+
+                CheckBox {
+                    id: swapWinAltKeysCheck
+                    hoverEnabled: true
+                    width: parent.width
+                    text: qsTr("Swap Win & Alt Keys")
+                    font.pointSize: 12
+                    checked: StreamingPreferences.swapWinAltKeys
+                    onCheckedChanged: {
+                        StreamingPreferences.swapWinAltKeys = checked
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 10000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("When enabled, pressing Alt sends Windows key and pressing Windows key sends Alt to the host.") + " " +
+                                  qsTr("This is particularly useful when connecting to a Windows client from a Mac.")
+                }
             }
         }
 

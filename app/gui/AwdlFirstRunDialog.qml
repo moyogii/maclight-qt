@@ -41,7 +41,7 @@ NavigableDialog {
                 text: qsTr("Would you like to enable AWDL (Apple Wireless Direct Link) management?\n\n" +
                           "AWDL is used by AirDrop and other Apple services, but can interfere with " +
                           "streaming performance on some networks.\n\n" +
-                          "If enabled, Moonlight will temporarily disable AWDL during streaming sessions " +
+                          "If enabled, Maclight will temporarily disable AWDL during streaming sessions " +
                           "to improve network stability. This requires administrator privileges.")
                 wrapMode: Text.Wrap
                 Layout.maximumWidth: 400

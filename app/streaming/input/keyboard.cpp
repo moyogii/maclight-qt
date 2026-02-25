@@ -1,10 +1,15 @@
 #include "streaming/session.h"
+#include "streaming/input/input.h"
 
 #include <Limelight.h>
 #include "SDL_compat.h"
 
 #define VK_0 0x30
 #define VK_A 0x41
+#define VK_LALT 0xA4
+#define VK_RALT 0xA5
+#define VK_LWIN 0x5B
+#define VK_RWIN 0x5C
 
 // These are real Windows VK_* codes
 #ifndef VK_F1
@@ -189,6 +194,7 @@ void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
     short keyCode;
     char modifiers;
     bool shouldNotConvertToScanCodeOnServer = false;
+    SdlInputHandler* handler = this;
 
     if (event->repeat) {
         // Ignore repeat key down events
@@ -271,6 +277,17 @@ void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
     if (event->keysym.mod & KMOD_GUI) {
         if (isSystemKeyCaptureActive()) {
             modifiers |= MODIFIER_META;
+        }
+    }
+    // Swap Alt and Win modifiers when enabled
+    if (handler->m_SwapWinAltKeys) {
+        if (modifiers & MODIFIER_ALT) {
+            modifiers &= ~MODIFIER_ALT;
+            modifiers |= MODIFIER_META;
+        }
+        if (modifiers & MODIFIER_META) {
+            modifiers &= ~MODIFIER_META;
+            modifiers |= MODIFIER_ALT;
         }
     }
 
@@ -408,22 +425,22 @@ void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
                 keyCode = 0xA3;
                 break;
             case SDL_SCANCODE_LALT:
-                keyCode = 0xA4;
+                keyCode = handler->m_SwapWinAltKeys ? VK_LWIN : VK_LALT;
                 break;
             case SDL_SCANCODE_RALT:
-                keyCode = 0xA5;
+                keyCode = handler->m_SwapWinAltKeys ? VK_RWIN : VK_RALT;
                 break;
             case SDL_SCANCODE_LGUI:
-                if (!isSystemKeyCaptureActive()) {
+                if (!isSystemKeyCaptureActive() && !handler->m_SwapWinAltKeys) {
                     return;
                 }
-                keyCode = 0x5B;
+                keyCode = handler->m_SwapWinAltKeys ? VK_LALT : VK_LWIN;
                 break;
             case SDL_SCANCODE_RGUI:
-                if (!isSystemKeyCaptureActive()) {
+                if (!isSystemKeyCaptureActive() && !handler->m_SwapWinAltKeys) {
                     return;
                 }
-                keyCode = 0x5C;
+                keyCode = handler->m_SwapWinAltKeys ? VK_RALT : VK_RWIN;
                 break;
             case SDL_SCANCODE_APPLICATION:
                 keyCode = 0x5D;
