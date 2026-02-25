@@ -1,7 +1,6 @@
 #include "session.h"
 #include "settings/streamingpreferences.h"
 #include "streaming/streamutils.h"
-#include "backend/richpresencemanager.h"
 #include "backend/nvhttp.h"
 
 #include <Limelight.h>
@@ -1888,19 +1887,6 @@ void Session::exec()
     // (m_UnexpectedTermination is set back to true).
     m_UnexpectedTermination = false;
 
-    // Start rich presence to indicate we're in game
-    RichPresenceManager presence(*m_Preferences, m_App.name);
-    constexpr Uint32 k_RichPresenceCallbackIntervalMs = 250;
-    Uint32 nextRichPresenceCallbackTick = SDL_GetTicks() + k_RichPresenceCallbackIntervalMs;
-
-    auto runRichPresenceCallbacksIfDue = [&]() {
-        Uint32 now = SDL_GetTicks();
-        if (SDL_TICKS_PASSED(now, nextRichPresenceCallbackTick)) {
-            presence.runCallbacks();
-            nextRichPresenceCallbackTick = now + k_RichPresenceCallbackIntervalMs;
-        }
-    };
-
     // Toggle the stats overlay if requested by the user
     m_OverlayManager.setOverlayState(Overlay::OverlayDebug, m_Preferences->showPerformanceOverlay);
 
@@ -1920,8 +1906,7 @@ void Session::exec()
         // NB: This behavior was introduced in SDL 2.0.16, but had a few critical
         // issues that could cause indefinite timeouts, delayed joystick detection,
         // and other problems.
-        if (!SDL_WaitEventTimeout(&event, k_RichPresenceCallbackIntervalMs)) {
-            runRichPresenceCallbacksIfDue();
+        if (!SDL_WaitEventTimeout(&event, 1)) {
             continue;
         }
 #else
@@ -1937,11 +1922,9 @@ void Session::exec()
             // ARM core in the Steam Link, so we will wait 10 ms instead.
             SDL_Delay(10);
 #endif
-            runRichPresenceCallbacksIfDue();
             continue;
         }
 #endif
-        runRichPresenceCallbacksIfDue();
         switch (event.type) {
         case SDL_QUIT:
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,

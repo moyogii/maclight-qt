@@ -36,7 +36,6 @@ macx:!disable-prebuilts {
 macx {
     !disable-prebuilts {
         LIBS += -lssl.3 -lcrypto.3 -lavcodec.62 -lavutil.60 -lswscale.9 -lopus -lSDL2 -lSDL2_ttf
-        CONFIG += discord-rpc
     }
 
     LIBS += -lobjc -framework VideoToolbox -framework AVFoundation -framework CoreVideo -framework CoreGraphics -framework CoreMedia -framework AppKit -framework Metal -framework QuartzCore
@@ -71,7 +70,6 @@ SOURCES += \
     backend/nvpairingmanager.cpp \
     backend/computermanager.cpp \
     backend/boxartmanager.cpp \
-    backend/richpresencemanager.cpp \
     cli/commandlineparser.cpp \
     cli/listapps.cpp \
     cli/quitstream.cpp \
@@ -114,7 +112,6 @@ HEADERS += \
     backend/nvpairingmanager.h \
     backend/computermanager.h \
     backend/boxartmanager.h \
-    backend/richpresencemanager.h \
     cli/commandlineparser.h \
     cli/listapps.h \
     cli/quitstream.h \
@@ -198,12 +195,6 @@ macx {
 
     HEADERS += \
         streaming/video/ffmpeg-renderers/vt.h
-}
-discord-rpc {
-    message(Discord integration enabled)
-
-    LIBS += -ldiscord-rpc
-    DEFINES += HAVE_DISCORD
 }
 embedded {
     message(Embedded build)

@@ -35,14 +35,6 @@ while [[ "$#" -gt 0 ]]; do
       rm $LIB_PATH/windows/include/detver.h $LIB_PATH/windows/include/detours.h $LIB_PATH/windows/lib/*/detours.*
       shift
       ;;
-    --discord-rpc_win)
-      rm $LIB_PATH/windows/include/discord_*.h $LIB_PATH/windows/lib/*/discord-rpc.*
-      shift
-      ;;
-    --discord-rpc_mac)
-      rm $LIB_PATH/mac/include/discord_*.h $LIB_PATH/mac/lib/libdiscord-rpc.a
-      shift
-      ;;
     --opus_win)
       rm $LIB_PATH/windows/include/opus*.h $LIB_PATH/windows/lib/*/opus.*
       shift

@@ -1,4 +1,4 @@
-# Moonlight
+# Maclight (Moonlight fork for MacOS)
 
 ## Disclaimer
 Maclight is a fork of the [official Moonlight client](https://github.com/moonlight-stream/moonlight-qt) created to learn more about PC streaming and the MacOS operating system to optimize it for my specific needs. Due to this, it has a bunch of experimental/in-progress features that may or may not work for you. I *really* recommend using the official Mac client for a stable experience to support the original developers of Moonlight and their hard work as without them this fork would not be possible. 
@@ -98,5 +98,6 @@ You can also open `moonlight-qt.pro` in Qt Creator instead of building from the 
 ## Credits
 - [Moonlight](https://github.com/moonlight-stream/moonlight-qt)
 - [Apollo](https://github.com/ClassicOldSong/Apollo)
+- [Vibepollo](https://github.com/Nonary/Vibepollo)
 
 Make sure to check out the [Official Moonlight Website](https://moonlight-stream.org) and support them.
