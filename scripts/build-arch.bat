@@ -155,8 +155,6 @@ for /r "%BUILD_FOLDER%" %%f in (*.pdb) do (
     copy "%%f" %SYMBOLS_FOLDER%
     if !ERRORLEVEL! NEQ 0 goto Error
 )
-copy %SOURCE_ROOT%\libs\windows\lib\%ARCH%\*.pdb %SYMBOLS_FOLDER%
-if !ERRORLEVEL! NEQ 0 goto Error
 7z a %SYMBOLS_FOLDER%\MoonlightDebuggingSymbols-%ARCH%-%VERSION%.zip %SYMBOLS_FOLDER%\*.pdb
 if !ERRORLEVEL! NEQ 0 goto Error
 
@@ -181,10 +179,6 @@ if "%ML_SYMBOL_ARCHIVE%" NEQ "" (
         exit /b 1
     )
 )
-
-echo Copying DLL dependencies
-copy %SOURCE_ROOT%\libs\windows\lib\%ARCH%\*.dll %DEPLOY_FOLDER%
-if !ERRORLEVEL! NEQ 0 goto Error
 
 echo Copying AntiHooking.dll
 copy %BUILD_FOLDER%\AntiHooking\%BUILD_CONFIG%\AntiHooking.dll %DEPLOY_FOLDER%

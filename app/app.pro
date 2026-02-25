@@ -165,26 +165,6 @@ config_EGL {
         streaming/video/ffmpeg-renderers/eglvid.h \
         streaming/video/ffmpeg-renderers/eglimagefactory.h
 }
-config_SL {
-    message(Steam Link build configuration selected)
-
-    !disable-prebuilts {
-        # Link against our NEON-optimized libopus build
-        LIBS += -L$$PWD/../libs/steamlink/lib
-        INCLUDEPATH += $$PWD/../libs/steamlink/include
-        LIBS += -lopus -larmasm -lNE10
-    }
-
-    DEFINES += EMBEDDED_BUILD STEAM_LINK HAVE_SLVIDEO HAVE_SLAUDIO
-    LIBS += -lSLVideo -lSLAudio
-
-    SOURCES += \
-        streaming/video/slvid.cpp \
-        streaming/audio/renderers/slaud.cpp
-    HEADERS += \
-        streaming/video/slvid.h \
-        streaming/audio/renderers/slaud.h
-}
 macx {
     message(VideoToolbox renderer selected)
 
