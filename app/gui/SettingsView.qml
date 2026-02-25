@@ -995,7 +995,7 @@ Flickable {
                     ToolTip.delay: 1000
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Automatically sync your clipboard between the host and client when the streaming window changes focus. (Requires Apollo)")
+                    ToolTip.text: qsTr("Automatically sync your clipboard between the host and client when the streaming window changes focus. (Requires Apollo/Vibepollo)")
                 }
             }
         }
