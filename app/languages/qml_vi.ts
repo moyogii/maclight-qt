@@ -958,7 +958,7 @@
     </message>
     <message>
         <location filename="../gui/SettingsView.qml" line="1420"/>
-        <source>Swap left and right mouse buttons</source>
+        <source>Swap left & right mouse buttons</source>
         <translation>Đảo các nút chuột trái và phải</translation>
     </message>
     <message>

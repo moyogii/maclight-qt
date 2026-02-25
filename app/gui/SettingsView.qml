@@ -1420,7 +1420,7 @@ Flickable {
                     id: swapMouseButtonsCheck
                     hoverEnabled: true
                     width: parent.width
-                    text: qsTr("Swap left and right mouse buttons")
+                    text: qsTr("Swap left & right mouse buttons")
                     font.pointSize:  12
                     checked: StreamingPreferences.swapMouseButtons
                     onCheckedChanged: {
