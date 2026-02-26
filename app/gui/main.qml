@@ -64,6 +64,15 @@ ApplicationWindow {
             SystemProperties.unmappedGamepadsChanged.connect(hasUnmappedGamepadsChanged)
             SystemProperties.startAsyncLoad()
         }
+
+        if (!pollingActive) {
+            ComputerManager.startPolling()
+            pollingActive = true
+        }
+
+        if (!active) {
+            inactivityTimer.restart()
+        }
     }
 
     function hasHardwareAccelerationChanged() {
