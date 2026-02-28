@@ -1795,6 +1795,80 @@ Flickable {
                     ToolTip.text: qsTr("Resets your AWDL management choice. The AWDL prompt will appear again on next launch.")
                 }
 
+                Item {
+                    width: parent.width
+                    height: 14
+                    visible: Qt.platform.os === "osx"
+                }
+
+                Label {
+                    width: parent.width
+                    text: qsTr("Metal Debug Settings")
+                    font.pointSize: 12
+                    wrapMode: Text.Wrap
+                    visible: Qt.platform.os === "osx"
+                }
+
+                CheckBox {
+                    id: metalPerformanceHudCheck
+                    width: parent.width
+                    text: qsTr("Enable Metal performance HUD")
+                    font.pointSize: 12
+                    visible: Qt.platform.os === "osx"
+                    checked: StreamingPreferences.metalPerformanceHudEnabled
+
+                    onCheckedChanged: {
+                        if (StreamingPreferences.metalPerformanceHudEnabled !== checked) {
+                            StreamingPreferences.metalPerformanceHudEnabled = checked
+                        }
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Displays Metal performance statistics overlay. Requires app restart.")
+                }
+
+                CheckBox {
+                    id: metalDebugLayerCheck
+                    width: parent.width
+                    text: qsTr("Enable Metal debug layer (MTL_DEBUG_LAYER)")
+                    font.pointSize: 12
+                    visible: Qt.platform.os === "osx"
+                    checked: StreamingPreferences.metalDebugLayerEnabled
+
+                    onCheckedChanged: {
+                        if (StreamingPreferences.metalDebugLayerEnabled !== checked) {
+                            StreamingPreferences.metalDebugLayerEnabled = checked
+                        }
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Adds API validation checks for Metal. This can heavily impact performance while streaming and requires app restart.")
+                }
+
+                CheckBox {
+                    id: metalShaderValidationCheck
+                    width: parent.width
+                    text: qsTr("Enable Metal shader validation (MTL_SHADER_VALIDATION)")
+                    font.pointSize: 12
+                    visible: Qt.platform.os === "osx"
+                    checked: StreamingPreferences.metalShaderValidationEnabled
+
+                    onCheckedChanged: {
+                        if (StreamingPreferences.metalShaderValidationEnabled !== checked) {
+                            StreamingPreferences.metalShaderValidationEnabled = checked
+                        }
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Enables extra GPU shader/runtime validation checks. This has very high overhead and requires app restart.")
+                }
+
 
 
             }

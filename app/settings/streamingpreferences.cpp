@@ -58,6 +58,9 @@
 #define SER_CLIPBOARDSYNC "clipboardsync"
 #define SER_AWDL_ENABLED "awdlenabled"
 #define SER_AWDL_FIRSTRUN_SHOWN "awdlfirstrunshown"
+#define SER_METAL_DEBUG_LAYER_ENABLED "metalDebugLayerEnabled"
+#define SER_METAL_SHADER_VALIDATION_ENABLED "metalShaderValidationEnabled"
+#define SER_METAL_PERFORMANCE_HUD_ENABLED "metalPerformanceHudEnabled"
 #define SER_HOTKEY_TOGGLE_STATS_MODS "hotkeyToggleStatsMods"
 #define SER_HOTKEY_TOGGLE_STATS_SCAN "hotkeyToggleStatsScan"
 #define SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS "hotkeyToggleMouseModeMods"
@@ -172,6 +175,9 @@ void StreamingPreferences::reload()
     enableClipboardSync = settings.value(SER_CLIPBOARDSYNC, true).toBool();
     awdlEnabled = settings.value(SER_AWDL_ENABLED, false).toBool();
     awdlFirstRunShown = settings.value(SER_AWDL_FIRSTRUN_SHOWN, false).toBool();
+    metalDebugLayerEnabled = settings.value(SER_METAL_DEBUG_LAYER_ENABLED, false).toBool();
+    metalShaderValidationEnabled = settings.value(SER_METAL_SHADER_VALIDATION_ENABLED, false).toBool();
+    metalPerformanceHudEnabled = settings.value(SER_METAL_PERFORMANCE_HUD_ENABLED, false).toBool();
     enableHdr = settings.value(SER_HDR, false).toBool();
     captureSysKeysMode = static_cast<CaptureSysKeysMode>(settings.value(SER_CAPTURESYSKEYS,
                                                          static_cast<int>(CaptureSysKeysMode::CSK_OFF)).toInt());
@@ -385,6 +391,9 @@ void StreamingPreferences::save()
     settings.setValue(SER_CLIPBOARDSYNC, enableClipboardSync);
     settings.setValue(SER_AWDL_ENABLED, awdlEnabled);
     settings.setValue(SER_AWDL_FIRSTRUN_SHOWN, awdlFirstRunShown);
+    settings.setValue(SER_METAL_DEBUG_LAYER_ENABLED, metalDebugLayerEnabled);
+    settings.setValue(SER_METAL_SHADER_VALIDATION_ENABLED, metalShaderValidationEnabled);
+    settings.setValue(SER_METAL_PERFORMANCE_HUD_ENABLED, metalPerformanceHudEnabled);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_MODS, hotkeyToggleStatsModifiers);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_SCAN, hotkeyToggleStatsScanCode);
     settings.setValue(SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS, hotkeyToggleMouseModeModifiers);

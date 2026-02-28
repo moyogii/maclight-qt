@@ -48,6 +48,11 @@ SystemProperties::SystemProperties()
     hasDesktopEnvironment = WMUtils::isRunningDesktopEnvironment();
     isRunningWayland = false;
     isRunningXWayland = false;
+#ifdef QT_DEBUG
+    isDebugBuild = true;
+#else
+    isDebugBuild = false;
+#endif
     usesMaterial3Theme = QLibraryInfo::version() >= QVersionNumber(6, 5, 0);
     macOsAccentColor = "#0A84FF";
     QString nativeArch = QSysInfo::currentCpuArchitecture();

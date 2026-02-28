@@ -150,6 +150,9 @@ public:
     Q_PROPERTY(bool enableClipboardSync MEMBER enableClipboardSync NOTIFY enableClipboardSyncChanged)
     Q_PROPERTY(bool awdlEnabled MEMBER awdlEnabled NOTIFY awdlEnabledChanged)
     Q_PROPERTY(bool awdlFirstRunShown MEMBER awdlFirstRunShown NOTIFY awdlFirstRunShownChanged)
+    Q_PROPERTY(bool metalDebugLayerEnabled MEMBER metalDebugLayerEnabled NOTIFY metalDebugLayerEnabledChanged)
+    Q_PROPERTY(bool metalShaderValidationEnabled MEMBER metalShaderValidationEnabled NOTIFY metalShaderValidationEnabledChanged)
+    Q_PROPERTY(bool metalPerformanceHudEnabled MEMBER metalPerformanceHudEnabled NOTIFY metalPerformanceHudEnabledChanged)
     Q_PROPERTY(int hotkeyToggleStatsModifiers MEMBER hotkeyToggleStatsModifiers NOTIFY hotkeyToggleStatsChanged)
     Q_PROPERTY(int hotkeyToggleStatsScanCode MEMBER hotkeyToggleStatsScanCode NOTIFY hotkeyToggleStatsChanged)
     Q_PROPERTY(int hotkeyToggleMouseModeModifiers MEMBER hotkeyToggleMouseModeModifiers NOTIFY hotkeyToggleMouseModeChanged)
@@ -204,6 +207,9 @@ public:
     bool swapWinAltKeys;
     bool awdlEnabled;
     bool awdlFirstRunShown;
+    bool metalDebugLayerEnabled;
+    bool metalShaderValidationEnabled;
+    bool metalPerformanceHudEnabled;
     int hotkeyToggleStatsModifiers;
     int hotkeyToggleStatsScanCode;
     int hotkeyToggleMouseModeModifiers;
@@ -263,6 +269,9 @@ signals:
     void enableClipboardSyncChanged();
     void awdlEnabledChanged();
     void awdlFirstRunShownChanged();
+    void metalDebugLayerEnabledChanged();
+    void metalShaderValidationEnabledChanged();
+    void metalPerformanceHudEnabledChanged();
 
     void hotkeyToggleStatsChanged();
     void hotkeyToggleMouseModeChanged();

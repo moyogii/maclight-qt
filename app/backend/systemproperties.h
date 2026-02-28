@@ -22,6 +22,7 @@ public:
     Q_PROPERTY(QString friendlyNativeArchName MEMBER friendlyNativeArchName CONSTANT)
     Q_PROPERTY(bool hasDesktopEnvironment MEMBER hasDesktopEnvironment CONSTANT)
     Q_PROPERTY(bool hasBrowser MEMBER hasBrowser CONSTANT)
+    Q_PROPERTY(bool isDebugBuild MEMBER isDebugBuild CONSTANT)
     Q_PROPERTY(bool usesMaterial3Theme MEMBER usesMaterial3Theme CONSTANT)
     Q_PROPERTY(QString macOsAccentColor MEMBER macOsAccentColor CONSTANT)
     Q_PROPERTY(QString versionString MEMBER versionString CONSTANT)
@@ -63,6 +64,7 @@ private:
     QString friendlyNativeArchName;
     bool hasDesktopEnvironment;
     bool hasBrowser;
+    bool isDebugBuild;
     QString macOsAccentColor;
     QString versionString;
     bool usesMaterial3Theme;

@@ -11,6 +11,7 @@
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QRegularExpression>
+#include <QSettings>
 
 #ifdef Q_OS_UNIX
 #include <sys/socket.h>
@@ -414,14 +415,37 @@ int main(int argc, char *argv[])
     //
     qputenv("QSG_RENDER_LOOP", "basic");
 
-#if defined(Q_OS_DARWIN) && defined(QT_DEBUG)
-    // Enable Metal validation for debug builds
-    qputenv("MTL_DEBUG_LAYER", "1");
-    qputenv("MTL_SHADER_VALIDATION", "1");
-    
-    // Enable Metal HUD overlay for debug builds
-    qputenv("MTL_HUD_ENABLED", "1");
-    qInfo() << "Metal HUD overlay enabled for debug build";
+#if defined(Q_OS_DARWIN)
+    QSettings settings;
+    const bool metalDebugLayerEnabled = settings.value("metalDebugLayerEnabled", false).toBool();
+    const bool metalShaderValidationEnabled = settings.value("metalShaderValidationEnabled", false).toBool();
+    const bool metalPerformanceHudEnabled = settings.value("metalPerformanceHudEnabled", false).toBool();
+
+    if (metalPerformanceHudEnabled) {
+        qputenv("MTL_HUD_ENABLED", "1");
+    }
+    else {
+        qunsetenv("MTL_HUD_ENABLED");
+    }
+
+    if (metalDebugLayerEnabled) {
+        qputenv("MTL_DEBUG_LAYER", "1");
+    }
+    else {
+        qunsetenv("MTL_DEBUG_LAYER");
+    }
+
+    if (metalShaderValidationEnabled) {
+        qputenv("MTL_SHADER_VALIDATION", "1");
+    }
+    else {
+        qunsetenv("MTL_SHADER_VALIDATION");
+    }
+
+    qInfo() << "Metal settings:"
+            << "MTL_HUD_ENABLED=" << (metalPerformanceHudEnabled ? "1" : "0")
+            << "MTL_DEBUG_LAYER=" << (metalDebugLayerEnabled ? "1" : "0")
+            << "MTL_SHADER_VALIDATION=" << (metalShaderValidationEnabled ? "1" : "0");
 #endif
 
     // We don't want system proxies to apply to us
@@ -655,6 +679,11 @@ int main(int argc, char *argv[])
     if (hasGUI) {
         engine.rootContext()->setContextProperty("initialView", initialView);
         engine.rootContext()->setContextProperty("runConfigChecks", commandLineParserResult == GlobalCommandLineParser::NormalStartRequested);
+#if defined(QT_DEBUG)
+        engine.rootContext()->setContextProperty("isDebugBuild", true);
+#else
+        engine.rootContext()->setContextProperty("isDebugBuild", false);
+#endif
 
         // Load the main.qml file
         engine.load(QUrl(QStringLiteral("qrc:/gui/main.qml")));
