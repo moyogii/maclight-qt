@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ master, main ]
   workflow_dispatch:
+    inputs:
+      DISABLE_RELEASE:
+        description: 'Skip the release step when set to true'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   build-macos:
@@ -91,7 +97,7 @@ jobs:
         path: build/installer-Release/*.dsym/*
 
     - name: Create Release
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event.inputs.DISABLE_RELEASE != 'true'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.version.outputs.version }}
