@@ -17,6 +17,14 @@ SOURCE_ROOT=$PWD
 BUILD_FOLDER=$BUILD_ROOT/build-$BUILD_CONFIG
 INSTALLER_FOLDER=$BUILD_ROOT/installer-$BUILD_CONFIG
 
+if command -v qmake6 >/dev/null 2>&1; then
+  QMAKE_BIN=qmake6
+elif command -v qmake >/dev/null 2>&1; then
+  QMAKE_BIN=qmake
+else
+  fail "Neither qmake6 nor qmake was found in PATH"
+fi
+
 if [ -n "$CI_VERSION" ]; then
   VERSION=$CI_VERSION
 else
@@ -30,9 +38,16 @@ mkdir -p $BUILD_ROOT
 mkdir -p $BUILD_FOLDER
 mkdir -p $INSTALLER_FOLDER
 
+echo Cleaning in-tree intermediate artifacts
+rm -rf "$SOURCE_ROOT/app/release" "$SOURCE_ROOT/app/debug"
+rm -rf "$SOURCE_ROOT/moonlight-common-c/release" "$SOURCE_ROOT/moonlight-common-c/debug"
+rm -rf "$SOURCE_ROOT/qmdnsengine/release" "$SOURCE_ROOT/qmdnsengine/debug"
+rm -rf "$SOURCE_ROOT/h264bitstream/release" "$SOURCE_ROOT/h264bitstream/debug"
+
 echo Configuring the project
 pushd $BUILD_FOLDER
-qmake $SOURCE_ROOT/moonlight-qt.pro || fail "Qmake failed!"
+echo "Using qmake binary: $QMAKE_BIN"
+$QMAKE_BIN $SOURCE_ROOT/moonlight-qt.pro || fail "Qmake failed!"
 popd
 
 echo Compiling Maclight in $BUILD_CONFIG configuration
@@ -65,15 +80,13 @@ codesign --force --deep --sign - $BUILD_FOLDER/app/Maclight.app || fail "Signing
 xattr -cr $BUILD_FOLDER/app/Maclight.app
 
 echo Creating DMG
-create-dmg $BUILD_FOLDER/app/Maclight.app $INSTALLER_FOLDER --overwrite --dmg-title="Maclight"
-case $? in
-  0) ;;
-  2) ;;
-  *) fail "create-dmg failed!";;
-esac
+rm -f "$INSTALLER_FOLDER/Maclight.dmg"
+create-dmg --volname "Maclight" "$INSTALLER_FOLDER/Maclight.dmg" "$BUILD_FOLDER/app" || fail "create-dmg failed!"
 
 # Rename to include version
-mv $INSTALLER_FOLDER/Maclight*.dmg $INSTALLER_FOLDER/Maclight-$VERSION.dmg 2>/dev/null || true
+if [ -f "$INSTALLER_FOLDER/Maclight.dmg" ]; then
+  mv "$INSTALLER_FOLDER/Maclight.dmg" "$INSTALLER_FOLDER/Maclight-$VERSION.dmg"
+fi
 
 echo Build successful
 echo "DMG: $INSTALLER_FOLDER/Maclight-$VERSION.dmg"
