@@ -40,10 +40,16 @@ jobs:
     - name: Generate version and changelog
       id: version
       run: |
-        # Generate incremental version using run number
+        # Get base version
         BASE_VERSION=$(cat app/version.txt | cut -d'.' -f1-2)
-        BUILD_NUMBER=${{ github.run_number }}
-        FULL_VERSION="${BASE_VERSION}.${BUILD_NUMBER}"
+        
+        # Check if this is a pre-release (DISABLE_RELEASE is set)
+        if [ "${{ github.event.inputs.DISABLE_RELEASE }}" = "true" ]; then
+          FULL_VERSION="${BASE_VERSION}-pre"
+        else
+          BUILD_NUMBER=${{ github.run_number }}
+          FULL_VERSION="${BASE_VERSION}.${BUILD_NUMBER}"
+        fi
         
         # Update version.txt with the new version
         echo "$FULL_VERSION" > app/version.txt
@@ -74,7 +80,9 @@ jobs:
         # Output variables for later steps
         echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
         echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
-        echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        if [ -n "$BUILD_NUMBER" ]; then
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        fi
         
         # Display version info
         echo "Generated version: $FULL_VERSION"
