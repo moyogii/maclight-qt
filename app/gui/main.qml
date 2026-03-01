@@ -270,7 +270,10 @@ ApplicationWindow {
                 // Only make the button visible if the user has navigated somewhere.
                 visible: stackView.depth > 1
 
-                iconSource: "image://sfsymbol/chevron.backward"
+                iconSource: "image://sfsymbol/arrow.left"
+                Layout.preferredWidth: 48
+                Layout.preferredHeight: 48
+                Layout.alignment: Qt.AlignVCenter
 
                 onClicked: goBack()
 
@@ -354,6 +357,9 @@ ApplicationWindow {
                 visible: stackView.currentItem instanceof PcView
 
                 iconSource: "image://sfsymbol/plus.circle"
+                Layout.preferredWidth: 56
+                Layout.preferredHeight: 56
+                Layout.alignment: Qt.AlignVCenter
 
                 ToolTip.delay: 1000
                 ToolTip.timeout: 3000
@@ -379,12 +385,15 @@ ApplicationWindow {
                 // TODO: Implement gamepad mapping then unhide this button
                 visible: false
 
+                iconSource: "image://sfsymbol/gamecontroller.fill"
+                Layout.preferredWidth: 56
+                Layout.preferredHeight: 56
+                Layout.alignment: Qt.AlignVCenter
+
                 ToolTip.delay: 1000
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Gamepad Mapper")
-
-                iconSource: "image://sfsymbol/gamecontroller.fill"
 
                 onClicked: navigateTo("qrc:/gui/GamepadMapper.qml", GamepadMapper)
 
@@ -397,6 +406,9 @@ ApplicationWindow {
                 id: settingsButton
 
                 iconSource: "image://sfsymbol/gearshape.fill"
+                Layout.preferredWidth: 56
+                Layout.preferredHeight: 56
+                Layout.alignment: Qt.AlignVCenter
 
                 onClicked: navigateTo("qrc:/gui/SettingsView.qml", SettingsView)
 
