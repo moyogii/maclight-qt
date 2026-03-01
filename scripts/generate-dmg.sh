@@ -89,9 +89,7 @@ case $? in
 esac
 
 # Rename to include version
-if [ -f "$INSTALLER_FOLDER/Maclight.dmg" ]; then
-  mv "$INSTALLER_FOLDER/Maclight.dmg" "$INSTALLER_FOLDER/Maclight-$VERSION.dmg"
-fi
+mv $INSTALLER_FOLDER/Maclight*.dmg $INSTALLER_FOLDER/Maclight-$VERSION.dmg 2>/dev/null || true
 
 echo Build successful
 echo "DMG: $INSTALLER_FOLDER/Maclight-$VERSION.dmg"
