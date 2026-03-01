@@ -81,7 +81,12 @@ xattr -cr $BUILD_FOLDER/app/Maclight.app
 
 echo Creating DMG
 rm -f "$INSTALLER_FOLDER/Maclight.dmg"
-create-dmg --volname "Maclight" "$INSTALLER_FOLDER/Maclight.dmg" "$BUILD_FOLDER/app/Maclight.app" || fail "create-dmg failed!"
+create-dmg "$BUILD_FOLDER/app/Maclight.app" $INSTALLER_FOLDER --overwrite --dmg-title="Maclight"
+case $? in
+  0) ;;
+  2) ;;
+  *) fail "create-dmg failed!";;
+esac
 
 # Rename to include version
 if [ -f "$INSTALLER_FOLDER/Maclight.dmg" ]; then

@@ -1,7 +1,7 @@
 # Maclight (Moonlight fork for MacOS)
 
 ## Disclaimer
-Maclight is a fork of the [official Moonlight client](https://github.com/moonlight-stream/moonlight-qt) created to learn more about PC streaming and the MacOS operating system to optimize it for my specific needs. Due to this, it has a bunch of experimental/in-progress features that may or may not work for you. I *really* recommend using the official Mac client for a stable experience to support the original developers of Moonlight and their hard work as without them this fork would not be possible. 
+Maclight is a fork of the [official Moonlight client](https://github.com/moonlight-stream/moonlight-qt) created to learn more about PC streaming and the MacOS operating system to optimize it for my specific needs. Due to this, it has a bunch of experimental/in-progress features that may or may not work for you. This is **NOT** meant to be a replacement for Moonlight. I *really* recommend using the official Mac client for a stable experience to support the original developers of Moonlight and their hard work as without them this fork would not be possible. 
 
 Occasionally this fork will pull in relevant changes from [moonlight-common-c](https://github.com/moonlight-stream/moonlight-common-c) and [moonlight-qt](https://github.com/moonlight-stream/moonlight-qt) to keep it as up to date as possible with the original app.
 
@@ -18,8 +18,8 @@ Occasionally this fork will pull in relevant changes from [moonlight-common-c](h
  - Automatic enabling and disabling of AWDL (Apple Wireless Direct Link)
  - Game Mode support
  - Clipboard Sync (Requires [Apollo](https://github.com/ClassicOldSong/Apollo) or [Vibepollo](https://github.com/Nonary/Vibepollo))
- - Programmable Hotkeys (Toggle Performance Overlay, Exit Stream, Toggle Mouse Mode, etc.)
- - Toast notifications for various Moonlight events
+ - Programmable Hotkeys (Toggle Performance Overlay, Exit Stream, Toggle Mouse Mode, Toggle Stream Audio, etc.)
+ - Toast notifications
  - Win/Alt Swap support (Useful for MacOS -> Windows host streaming)
  
 ## Downloads
