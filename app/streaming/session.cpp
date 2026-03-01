@@ -1,6 +1,7 @@
 #include "session.h"
 #include "settings/streamingpreferences.h"
 #include "streaming/streamutils.h"
+#include "streaming/metalhudutils.h"
 #include "backend/nvhttp.h"
 
 #include <Limelight.h>
@@ -1859,6 +1860,10 @@ void Session::exec()
         SDL_SetWindowFullscreen(m_Window, m_FullScreenFlag);
     }
 
+#ifdef Q_OS_DARWIN
+    MetalHudUtils::setQtWindowHudMode(m_QtWindow, MetalHudUtils::LayerMode::Disabled);
+#endif
+
     bool needsFirstEnterCapture = false;
     bool needsPostDecoderCreationCapture = true;
 
@@ -2229,6 +2234,10 @@ void Session::exec()
     }
 
 DispatchDeferredCleanup:
+#ifdef Q_OS_DARWIN
+    MetalHudUtils::setQtWindowHudMode(m_QtWindow, MetalHudUtils::LayerMode::Default);
+#endif
+
     // Switch back to synchronous logging mode
     StreamUtils::exitAsyncLoggingMode();
 

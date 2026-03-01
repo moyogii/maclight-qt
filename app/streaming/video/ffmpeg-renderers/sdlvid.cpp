@@ -1,9 +1,12 @@
 #include "sdlvid.h"
 
 #include "streaming/session.h"
+#include "streaming/metalhudutils.h"
 #include "streaming/streamutils.h"
 
 #include <Limelight.h>
+
+#include <cstring>
 
 #include <SDL_syswm.h>
 
@@ -218,6 +221,14 @@ bool SdlRenderer::initialize(PDECODER_PARAMETERS params)
         m_InitFailureReason = InitFailureReason::NoSoftwareSupport;
         return false;
     }
+
+#ifdef Q_OS_DARWIN
+    SDL_RendererInfo rendererInfo;
+    if (SDL_GetRendererInfo(m_Renderer, &rendererInfo) == 0 &&
+            strcmp(rendererInfo.name, "metal") == 0) {
+        MetalHudUtils::setSdlRendererHudMode(m_Renderer, MetalHudUtils::LayerMode::Main);
+    }
+#endif
 
     return true;
 }

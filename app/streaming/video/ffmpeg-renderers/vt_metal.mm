@@ -9,6 +9,7 @@
 #include <Limelight.h>
 #include "streaming/session.h"
 #include "streaming/streamutils.h"
+#include "streaming/metalhudutils.h"
 #include "path.h"
 
 // Forward declaration for queue monitoring (used in fallback backpressure system)
@@ -999,6 +1000,10 @@ public:
         }
 
         m_MetalLayer = (CAMetalLayer*)SDL_Metal_GetLayer(m_MetalView);
+
+        MetalHudUtils::setMetalLayerHudMode(m_MetalLayer,
+                                            params->testOnly ? MetalHudUtils::LayerMode::Disabled
+                                                             : MetalHudUtils::LayerMode::Main);
 
         // Choose a device
         m_MetalLayer.device = device;
