@@ -475,6 +475,15 @@ ApplicationWindow {
         }
     }
 
+    HotkeyCaptureDialog {
+        id: toggleAudioMuteHotkeyCaptureDialog
+        hotkeyName: qsTr("Toggle Stream Audio Mute")
+        onHotkeyCaptured: {
+            StreamingPreferences.hotkeyToggleAudioMuteModifiers = modifiers
+            StreamingPreferences.hotkeyToggleAudioMuteScanCode = scanCode
+        }
+    }
+
     // This dialog appears when quitting via keyboard or gamepad button
     NavigableMessageDialog {
         id: quitConfirmationDialog

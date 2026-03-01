@@ -162,6 +162,8 @@ public:
     Q_PROPERTY(int hotkeyExitStreamScanCode MEMBER hotkeyExitStreamScanCode NOTIFY hotkeyExitStreamChanged)
     Q_PROPERTY(int hotkeyToggleCaptureSysKeysModifiers MEMBER hotkeyToggleCaptureSysKeysModifiers NOTIFY hotkeyToggleCaptureSysKeysChanged)
     Q_PROPERTY(int hotkeyToggleCaptureSysKeysScanCode MEMBER hotkeyToggleCaptureSysKeysScanCode NOTIFY hotkeyToggleCaptureSysKeysChanged)
+    Q_PROPERTY(int hotkeyToggleAudioMuteModifiers MEMBER hotkeyToggleAudioMuteModifiers NOTIFY hotkeyToggleAudioMuteChanged)
+    Q_PROPERTY(int hotkeyToggleAudioMuteScanCode MEMBER hotkeyToggleAudioMuteScanCode NOTIFY hotkeyToggleAudioMuteChanged)
     Q_INVOKABLE bool retranslate();
     Q_INVOKABLE static QString hotkeyToString(int modifiers, int scanCode);
     
@@ -220,6 +222,8 @@ public:
     int hotkeyExitStreamScanCode;
     int hotkeyToggleCaptureSysKeysModifiers;
     int hotkeyToggleCaptureSysKeysScanCode;
+    int hotkeyToggleAudioMuteModifiers;
+    int hotkeyToggleAudioMuteScanCode;
     int packetSize;
     AudioConfig audioConfig;
     VideoCodecConfig videoCodecConfig;
@@ -280,6 +284,7 @@ signals:
     void hotkeyToggleMouseModeChanged();
     void hotkeyExitStreamChanged();
     void hotkeyToggleCaptureSysKeysChanged();
+    void hotkeyToggleAudioMuteChanged();
 
     void awdlAuthorizationChanged(bool hasAuth);
     void awdlError(const QString &error);

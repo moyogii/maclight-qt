@@ -553,6 +553,7 @@ Session::Session(NvComputer* computer, NvApp& app, StreamingPreferences *prefere
       m_VideoDecoder(nullptr),
       m_DecoderLock(SDL_CreateMutex()),
       m_AudioMuted(false),
+      m_AudioMutedByHotkey(false),
       m_QtWindow(nullptr),
       m_UnexpectedTermination(true), // Failure prior to streaming is unexpected
       m_InputHandler(nullptr),

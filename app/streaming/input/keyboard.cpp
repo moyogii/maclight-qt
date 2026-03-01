@@ -184,6 +184,18 @@ void SdlInputHandler::performSpecialKeyCombo(KeyCombo combo)
         SDL_PushEvent(&quitExitEvent);
         break;
 
+    case KeyComboToggleAudioMute:
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "Detected audio mute toggle combo");
+
+        // Toggle the audio mute state
+        Session::get()->m_AudioMutedByHotkey = !Session::get()->m_AudioMutedByHotkey;
+
+        // Show a toast notification
+        Session::get()->getOverlayManager().showToast(Overlay::ToastInfo, Overlay::ToastCategoryAudioMute,
+                                                       Session::get()->m_AudioMutedByHotkey ? "Stream Audio: Muted" : "Stream Audio: Unmuted");
+        break;
+
     default:
         Q_UNREACHABLE();
     }

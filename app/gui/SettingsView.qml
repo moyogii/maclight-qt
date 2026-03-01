@@ -2044,6 +2044,42 @@ Flickable {
                     }
                 }
 
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Label {
+                        text: qsTr("Toggle Stream Audio:")
+                        font.pointSize: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Label {
+                        id: toggleAudioMuteHotkeyDisplay
+                        text: StreamingPreferences.hotkeyToString(StreamingPreferences.hotkeyToggleAudioMuteModifiers,
+                                                                   StreamingPreferences.hotkeyToggleAudioMuteScanCode)
+                        font.pointSize: 12
+                        font.bold: true
+                        color: Material.accent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Button {
+                        id: changeToggleAudioMuteBtn
+                        text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeToggleAudioMuteBtn.down ? "#505050" : (changeToggleAudioMuteBtn.hovered ? "#484848" : "#424242")
+                        }
+                        onClicked: {
+                            toggleAudioMuteHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleAudioMuteModifiers
+                            toggleAudioMuteHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleAudioMuteScanCode
+                            toggleAudioMuteHotkeyCaptureDialog.open()
+                        }
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
                 Button {
                     id: resetHotkeysBtn
                     text: qsTr("Reset Hotkeys to Defaults")
@@ -2060,6 +2096,8 @@ Flickable {
                         StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode = 14
                         StreamingPreferences.hotkeyExitStreamModifiers = 0x3C3
                         StreamingPreferences.hotkeyExitStreamScanCode = 8
+                        StreamingPreferences.hotkeyToggleAudioMuteModifiers = 0x3C3
+                        StreamingPreferences.hotkeyToggleAudioMuteScanCode = 4
                     }
                 }
             }

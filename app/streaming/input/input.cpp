@@ -136,6 +136,12 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
     m_SpecialKeyCombos[KeyComboQuitAndExit].requiredModifiers = static_cast<Uint16>(prefs.hotkeyExitStreamModifiers);
     m_SpecialKeyCombos[KeyComboQuitAndExit].enabled = true;
 
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].keyCombo = KeyComboToggleAudioMute;
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].scanCode = static_cast<SDL_Scancode>(prefs.hotkeyToggleAudioMuteScanCode);
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].keyCode = SDL_GetKeyFromScancode(m_SpecialKeyCombos[KeyComboToggleAudioMute].scanCode);
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].requiredModifiers = static_cast<Uint16>(prefs.hotkeyToggleAudioMuteModifiers);
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].enabled = true;
+
     m_OldIgnoreDevices = SDL_GetHint(SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES);
     m_OldIgnoreDevicesExcept = SDL_GetHint(SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT);
 

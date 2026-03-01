@@ -170,6 +170,7 @@ private:
         KeyComboTogglePointerRegionLock,
         KeyComboToggleCaptureSysKeys,
         KeyComboQuitAndExit,
+        KeyComboToggleAudioMute,
         KeyComboMax
     };
 
