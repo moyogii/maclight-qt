@@ -74,14 +74,33 @@ echo Signing app bundle
 # Strip existing signatures from embedded code (required for linker-signed libs)
 find "$BUILD_FOLDER/app/Maclight.app/Contents/Frameworks" -type f \( -name "*.dylib" -o -name "*.framework" \) -exec codesign --remove-signature {} \; 2>/dev/null || true
 codesign --remove-signature "$BUILD_FOLDER/app/Maclight.app/Contents/MacOS/Maclight" 2>/dev/null || true
+
+SIGNING_IDENTITY="-"
+if [ -n "$APPLE_DEVELOPER_IDENTITY" ]; then
+  echo "Using developer identity for app signing: $APPLE_DEVELOPER_IDENTITY"
+  SIGNING_IDENTITY="$APPLE_DEVELOPER_IDENTITY"
+else
+  echo "Using ad-hoc signing for app bundle"
+fi
+
 # Note: --options runtime is NOT used because it's incompatible with linker-signed
 # libraries on macOS 15+ and causes "different Team IDs" errors at runtime
-codesign --force --deep --sign - $BUILD_FOLDER/app/Maclight.app || fail "Signing failed!"
+codesign --force --deep --sign "$SIGNING_IDENTITY" $BUILD_FOLDER/app/Maclight.app || fail "Signing failed!"
 xattr -cr $BUILD_FOLDER/app/Maclight.app
 
 echo Creating DMG
 rm -f "$INSTALLER_FOLDER/Maclight.dmg"
-create-dmg "$BUILD_FOLDER/app/Maclight.app" $INSTALLER_FOLDER --overwrite --dmg-title="Maclight"
+
+DMG_SIGN_ARGS=""
+if [ -n "$APPLE_DEVELOPER_IDENTITY" ]; then
+  echo "Code signing DMG with identity: $APPLE_DEVELOPER_IDENTITY"
+  DMG_SIGN_ARGS="--codesign $APPLE_DEVELOPER_IDENTITY"
+else
+  echo "No code signing identity provided, creating unsigned DMG"
+  DMG_SIGN_ARGS="--no-code-sign"
+fi
+
+create-dmg "$BUILD_FOLDER/app/Maclight.app" $INSTALLER_FOLDER --overwrite --dmg-title="Maclight" $DMG_SIGN_ARGS
 case $? in
   0) ;;
   2) ;;
