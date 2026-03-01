@@ -136,6 +136,7 @@ public:
     Q_PROPERTY(bool enableYUV444 MEMBER enableYUV444 NOTIFY enableYUV444Changed)
     Q_PROPERTY(VideoDecoderSelection videoDecoderSelection MEMBER videoDecoderSelection NOTIFY videoDecoderSelectionChanged)
     Q_PROPERTY(WindowMode windowMode MEMBER windowMode NOTIFY windowModeChanged)
+    Q_PROPERTY(bool displayMenuBarInBorderlessFullscreen MEMBER displayMenuBarInBorderlessFullscreen NOTIFY displayMenuBarInBorderlessFullscreenChanged)
     Q_PROPERTY(WindowMode recommendedFullScreenMode MEMBER recommendedFullScreenMode CONSTANT)
     Q_PROPERTY(UIDisplayMode uiDisplayMode MEMBER uiDisplayMode NOTIFY uiDisplayModeChanged)
     Q_PROPERTY(bool swapMouseButtons MEMBER swapMouseButtons NOTIFY mouseButtonsChanged)
@@ -207,6 +208,7 @@ public:
     bool swapFaceButtons;
     bool keepAwake;
     bool enableClipboardSync;
+    bool displayMenuBarInBorderlessFullscreen;
     bool swapWinAltKeys;
     bool awdlEnabled;
     bool awdlFirstRunShown;
@@ -257,6 +259,7 @@ signals:
     void videoDecoderSelectionChanged();
     void uiDisplayModeChanged();
     void windowModeChanged();
+    void displayMenuBarInBorderlessFullscreenChanged();
     void framePacingChanged();
     void connectionWarningsChanged();
     void configurationWarningsChanged();

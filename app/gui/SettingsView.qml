@@ -39,6 +39,53 @@ Flickable {
         return false
     }
 
+    component DialogOkCancelButtonBox: DialogButtonBox {
+        id: buttonBox
+
+        property var targetDialog
+        property var validationCallback: function() { return true }
+
+        Button {
+            text: qsTr("OK")
+            DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            enabled: buttonBox.validationCallback()
+            flat: true
+            contentItem: Text {
+                text: parent.text
+                font: parent.font
+                color: parent.enabled ? "white" : "#808080"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                radius: 3
+                color: parent.enabled ? (parent.down ? "#505050" : (parent.hovered ? "#484848" : "transparent")) : "transparent"
+            }
+            Keys.onReturnPressed: if (buttonBox.targetDialog) buttonBox.targetDialog.accept()
+            Keys.onEnterPressed: if (buttonBox.targetDialog) buttonBox.targetDialog.accept()
+        }
+        Button {
+            text: qsTr("Cancel")
+            DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            flat: true
+            contentItem: Text {
+                text: parent.text
+                font: parent.font
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                radius: 3
+                color: parent.down ? "#505050" : (parent.hovered ? "#484848" : "transparent")
+            }
+            Keys.onReturnPressed: if (buttonBox.targetDialog) buttonBox.targetDialog.reject()
+            Keys.onEnterPressed: if (buttonBox.targetDialog) buttonBox.targetDialog.reject()
+        }
+        onAccepted: if (buttonBox.targetDialog) buttonBox.targetDialog.accept()
+        onRejected: if (buttonBox.targetDialog) buttonBox.targetDialog.reject()
+    }
+
     NumberAnimation on contentY {
         id: autoScrollAnimation
         duration: 100
@@ -307,15 +354,10 @@ Flickable {
 
                         NavigableDialog {
                             id: customResolutionDialog
-                            standardButtons: Dialog.Ok | Dialog.Cancel
+                            standardButtons: Dialog.NoButton
                             onOpened: {
                                 // Force keyboard focus on the textbox so keyboard navigation works
                                 widthField.forceActiveFocus()
-
-                                // standardButton() was added in Qt 5.10, so we must check for it first
-                                if (customResolutionDialog.standardButton) {
-                                    customResolutionDialog.standardButton(Dialog.Ok).enabled = customResolutionDialog.isInputValid()
-                                }
                             }
 
                             onClosed: {
@@ -372,6 +414,11 @@ Flickable {
                                 }
                             }
 
+                            footer: DialogOkCancelButtonBox {
+                                targetDialog: customResolutionDialog
+                                validationCallback: customResolutionDialog.isInputValid
+                            }
+
                             ColumnLayout {
                                 Label {
                                     text: qsTr("Custom resolutions are not officially supported by GeForce Experience, so it will not set your host display resolution. You will need to set it manually while in game.") + "\n\n" +
@@ -394,13 +441,6 @@ Flickable {
                                         validator: IntValidator{bottom:256; top:8192}
                                         focus: true
 
-                                        onTextChanged: {
-                                            // standardButton() was added in Qt 5.10, so we must check for it first
-                                            if (customResolutionDialog.standardButton) {
-                                                customResolutionDialog.standardButton(Dialog.Ok).enabled = customResolutionDialog.isInputValid()
-                                            }
-                                        }
-
                                         Keys.onReturnPressed: {
                                             customResolutionDialog.accept()
                                         }
@@ -421,13 +461,6 @@ Flickable {
                                         inputMethodHints: Qt.ImhDigitsOnly
                                         placeholderText: resolutionListModel.get(resolutionComboBox.currentIndex).video_height
                                         validator: IntValidator{bottom:256; top:8192}
-
-                                        onTextChanged: {
-                                            // standardButton() was added in Qt 5.10, so we must check for it first
-                                            if (customResolutionDialog.standardButton) {
-                                                customResolutionDialog.standardButton(Dialog.Ok).enabled = customResolutionDialog.isInputValid()
-                                            }
-                                        }
 
                                         Keys.onReturnPressed: {
                                             customResolutionDialog.accept()
@@ -479,15 +512,10 @@ Flickable {
                             }
 
                             id: customFpsDialog
-                            standardButtons: Dialog.Ok | Dialog.Cancel
+                            standardButtons: Dialog.NoButton
                             onOpened: {
                                 // Force keyboard focus on the textbox so keyboard navigation works
                                 fpsField.forceActiveFocus()
-
-                                // standardButton() was added in Qt 5.10, so we must check for it first
-                                if (customFpsDialog.standardButton) {
-                                    customFpsDialog.standardButton(Dialog.Ok).enabled = customFpsDialog.isInputValid()
-                                }
                             }
 
                             onClosed: {
@@ -524,6 +552,11 @@ Flickable {
                                 }
                             }
 
+                            footer: DialogOkCancelButtonBox {
+                                targetDialog: customFpsDialog
+                                validationCallback: customFpsDialog.isInputValid
+                            }
+
                             ColumnLayout {
                                 Label {
                                     text: qsTr("Enter a custom frame rate:")
@@ -538,13 +571,6 @@ Flickable {
                                         placeholderText: fpsListModel.get(fpsComboBox.currentIndex).video_fps
                                         validator: IntValidator{bottom:10; top:9999}
                                         focus: true
-
-                                        onTextChanged: {
-                                            // standardButton() was added in Qt 5.10, so we must check for it first
-                                            if (customFpsDialog.standardButton) {
-                                                customFpsDialog.standardButton(Dialog.Ok).enabled = customFpsDialog.isInputValid()
-                                            }
-                                        }
 
                                         Keys.onReturnPressed: {
                                             customFpsDialog.accept()
@@ -850,6 +876,24 @@ Flickable {
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Frame pacing reduces micro-stutter by delaying frames that come in too early")
+                }
+
+                CheckBox {
+                    id: displayMenuBarInBorderlessFullscreenCheck
+                    width: parent.width
+                    hoverEnabled: true
+                    visible: Qt.platform.os === "osx" && SystemProperties.hasDesktopEnvironment && StreamingPreferences.windowMode === StreamingPreferences.WM_FULLSCREEN_DESKTOP
+                    text: qsTr("Display menu bar in borderless fullscreen")
+                    font.pointSize: 12
+                    checked: StreamingPreferences.displayMenuBarInBorderlessFullscreen
+                    onCheckedChanged: {
+                        StreamingPreferences.displayMenuBarInBorderlessFullscreen = checked
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Uses a borderless window below the macOS menu bar instead of a fullscreen Space. This sends a custom resolution to the host which may not be officially supported and could cause streaming errors.")
                 }
             }
         }

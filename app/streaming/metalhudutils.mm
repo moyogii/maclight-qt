@@ -79,6 +79,9 @@ static void setHudModeOnViewTree(NSView* view, MetalHudUtils::LayerMode mode)
     }
 }
 
+static NSApplicationPresentationOptions s_OriginalPresentationOptions = 0;
+static bool s_PresentationOptionsSaved = false;
+
 }
 
 namespace MetalHudUtils {
@@ -116,6 +119,34 @@ void setQtWindowHudMode(QQuickWindow* window, LayerMode mode)
 
     NSView* view = (NSView*)(windowId);
     setHudModeOnViewTree(view, mode);
+}
+
+void setDockHiddenForStreaming(bool enabled)
+{
+    @autoreleasepool {
+        NSApplication* app = [NSApplication sharedApplication];
+        if (app == nil) {
+            return;
+        }
+
+        if (enabled) {
+            if (!s_PresentationOptionsSaved) {
+                s_OriginalPresentationOptions = [app currentSystemPresentationOptions];
+                s_PresentationOptionsSaved = true;
+            }
+
+            NSApplicationPresentationOptions newOptions = s_OriginalPresentationOptions;
+            newOptions |= NSApplicationPresentationHideDock;
+            newOptions &= ~NSApplicationPresentationAutoHideDock;
+
+            [app setPresentationOptions:newOptions];
+        } else {
+            if (s_PresentationOptionsSaved) {
+                [app setPresentationOptions:s_OriginalPresentationOptions];
+                s_PresentationOptionsSaved = false;
+            }
+        }
+    }
 }
 
 }

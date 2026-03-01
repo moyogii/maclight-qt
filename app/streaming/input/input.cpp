@@ -353,15 +353,27 @@ QString SdlInputHandler::getCaptureSystemKeysModeString()
     }
 }
 
+bool SdlInputHandler::isFullscreenLikeWindow()
+{
+    if (m_Window == nullptr) {
+        return false;
+    }
+
+    Uint32 windowFlags = SDL_GetWindowFlags(m_Window);
+
+    // Consider both true fullscreen and borderless menu bar mode as "fullscreen-like"
+    return (windowFlags & SDL_WINDOW_FULLSCREEN) ||
+           (windowFlags & SDL_WINDOW_BORDERLESS);
+}
+
 void SdlInputHandler::updateKeyboardGrabState()
 {
     bool shouldGrab = false;
 
     if (m_CaptureSystemKeysMode != StreamingPreferences::CSK_OFF) {
         shouldGrab = isCaptureActive();
-        Uint32 windowFlags = SDL_GetWindowFlags(m_Window);
         if (m_CaptureSystemKeysMode == StreamingPreferences::CSK_FULLSCREEN &&
-                !(windowFlags & SDL_WINDOW_FULLSCREEN)) {
+                !isFullscreenLikeWindow()) {
             // Ungrab if it's fullscreen only and we left fullscreen
             shouldGrab = false;
         }
@@ -401,7 +413,7 @@ bool SdlInputHandler::isSystemKeyCaptureActive()
     }
 
     if (m_CaptureSystemKeysMode == StreamingPreferences::CSK_FULLSCREEN &&
-            !(windowFlags & SDL_WINDOW_FULLSCREEN)) {
+            !isFullscreenLikeWindow()) {
         return false;
     }
 

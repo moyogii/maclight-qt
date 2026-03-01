@@ -154,6 +154,8 @@ public:
 
     void updatePointerRegionLock();
 
+    bool isFullscreenLikeWindow();
+
     static
     QString getUnmappedGamepads();
 

@@ -15,4 +15,6 @@ void setQtWindowHudMode(QQuickWindow* window, LayerMode mode);
 void setSdlRendererHudMode(SDL_Renderer* renderer, LayerMode mode);
 void setMetalLayerHudMode(void* layer, LayerMode mode);
 
+void setDockHiddenForStreaming(bool enabled);
+
 }

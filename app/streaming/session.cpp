@@ -583,6 +583,13 @@ bool Session::initialize(QQuickWindow* qtWindow)
     m_QtWindow = qtWindow;
 
 #ifdef Q_OS_DARWIN
+    m_UseMacMenuBarBorderlessWindow = m_Preferences->windowMode == StreamingPreferences::WM_FULLSCREEN_DESKTOP &&
+                                      m_Preferences->displayMenuBarInBorderlessFullscreen;
+#else
+    m_UseMacMenuBarBorderlessWindow = false;
+#endif
+
+#ifdef Q_OS_DARWIN
     if (qEnvironmentVariableIntValue("I_WANT_BUGGY_FULLSCREEN") == 0) {
         // If we have a notch and the user specified one of the two native display modes
         // (notched or notchless), override the fullscreen mode to ensure it works as expected.
@@ -635,6 +642,21 @@ bool Session::initialize(QQuickWindow* qtWindow)
     m_StreamConfig.width = m_Preferences->width;
     m_StreamConfig.height = m_Preferences->height;
 
+#ifdef Q_OS_DARWIN
+    if (m_UseMacMenuBarBorderlessWindow) {
+        int targetDisplay = getTargetDisplayIndex();
+        int effectiveWidth, effectiveHeight;
+        getEffectiveMenuBarStreamResolution(targetDisplay, effectiveWidth, effectiveHeight);
+
+        m_StreamConfig.width = effectiveWidth;
+        m_StreamConfig.height = effectiveHeight;
+
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "Menu bar borderless mode: using effective stream resolution %dx%d (preference: %dx%d)",
+                    effectiveWidth, effectiveHeight, m_Preferences->width, m_Preferences->height);
+    }
+#endif
+
     int x, y, width, height;
     getWindowDimensions(x, y, width, height);
 
@@ -664,6 +686,21 @@ bool Session::initialize(QQuickWindow* qtWindow)
 
     m_StreamConfig.fps = m_Preferences->fps;
     m_StreamConfig.bitrate = m_Preferences->bitrateKbps;
+
+#ifdef Q_OS_DARWIN
+    if (m_UseMacMenuBarBorderlessWindow && m_Preferences->autoAdjustBitrate) {
+        int newBitrate = StreamingPreferences::getDefaultBitrate(m_StreamConfig.width,
+                                                                  m_StreamConfig.height,
+                                                                  m_StreamConfig.fps,
+                                                                  m_Preferences->enableYUV444);
+        if (newBitrate != m_StreamConfig.bitrate) {
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                        "Auto-adjusting bitrate for menu bar mode: %d -> %d kbps",
+                        m_StreamConfig.bitrate, newBitrate);
+            m_StreamConfig.bitrate = newBitrate;
+        }
+    }
+#endif
 
 #ifndef STEAM_LINK
     // Opt-in to all encryption features if we detect that the platform
@@ -1359,6 +1396,126 @@ void Session::getWindowDimensions(int& x, int& y,
     x = y = SDL_WINDOWPOS_CENTERED_DISPLAY(displayIndex);
 }
 
+void Session::getMenuBarExcludedBounds(int displayIndex, int& x, int& y,
+                                        int& width, int& height)
+{
+    SDL_Rect displayBounds;
+    SDL_Rect usableBounds;
+
+    if (SDL_GetDisplayBounds(displayIndex, &displayBounds) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                    "SDL_GetDisplayBounds() failed: %s",
+                    SDL_GetError());
+        x = 0;
+        y = 0;
+        width = 1920;
+        height = 1080;
+        return;
+    }
+
+    if (SDL_GetDisplayUsableBounds(displayIndex, &usableBounds) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                    "SDL_GetDisplayUsableBounds() failed: %s",
+                    SDL_GetError());
+        x = displayBounds.x;
+        y = displayBounds.y;
+        width = displayBounds.w;
+        height = displayBounds.h;
+        return;
+    }
+
+    // Calculate the menu bar height (top inset)
+    int topInset = usableBounds.y - displayBounds.y;
+
+    // Return bounds that exclude only the menu bar (cover the Dock)
+    x = displayBounds.x;
+    y = displayBounds.y + topInset;
+    width = displayBounds.w;
+    height = displayBounds.h - topInset;
+}
+
+int Session::getTargetDisplayIndex()
+{
+    int displayIndex = 0;
+
+    if (m_QtWindow != nullptr) {
+        QScreen* screen = m_QtWindow->screen();
+        if (screen != nullptr) {
+            QRect displayRect = screen->geometry();
+
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                        "Qt UI screen is at (%d,%d)",
+                        displayRect.x(), displayRect.y());
+            for (int i = 0; i < SDL_GetNumVideoDisplays(); i++) {
+                SDL_Rect displayBounds;
+
+                if (SDL_GetDisplayBounds(i, &displayBounds) == 0) {
+                    if (displayBounds.x == displayRect.x() &&
+                        displayBounds.y == displayRect.y()) {
+                        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                                    "SDL found matching display %d",
+                                    i);
+                        displayIndex = i;
+                        break;
+                    }
+                }
+                else {
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                                "SDL_GetDisplayBounds(%d) failed: %s",
+                                i, SDL_GetError());
+                }
+            }
+        }
+        else {
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                        "Qt window is not associated with a QScreen!");
+        }
+    }
+
+    return displayIndex;
+}
+
+void Session::getEffectiveMenuBarStreamResolution(int displayIndex, int& width, int& height)
+{
+    SDL_DisplayMode nativeMode;
+    SDL_Rect safeArea;
+
+    if (!StreamUtils::getNativeDesktopMode(displayIndex, &nativeMode, &safeArea)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                    "Failed to get native desktop mode for display %d, using preference resolution",
+                    displayIndex);
+        width = m_Preferences->width;
+        height = m_Preferences->height;
+        return;
+    }
+
+    int menuX, menuY, menuWidth, menuHeight;
+    getMenuBarExcludedBounds(displayIndex, menuX, menuY, menuWidth, menuHeight);
+
+    SDL_Rect displayBounds;
+    if (SDL_GetDisplayBounds(displayIndex, &displayBounds) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                    "SDL_GetDisplayBounds() failed: %s, using preference resolution",
+                    SDL_GetError());
+        width = m_Preferences->width;
+        height = m_Preferences->height;
+        return;
+    }
+
+    float scaleFactorX = (float)nativeMode.w / (float)displayBounds.w;
+    float scaleFactorY = (float)nativeMode.h / (float)displayBounds.h;
+
+    width = (int)roundf((float)menuWidth * scaleFactorX);
+    height = (int)roundf((float)menuHeight * scaleFactorY);
+
+    width = (width / 2) * 2;
+    height = (height / 2) * 2;
+
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                "Computed effective menu bar stream resolution for display %d: %dx%d (menu bounds: %dx%d, native: %dx%d, scaleFactor: %.2fx%.2f)",
+                displayIndex, width, height, menuWidth, menuHeight, nativeMode.w, nativeMode.h, scaleFactorX, scaleFactorY);
+}
+
 void Session::updateOptimalWindowDisplayMode()
 {
     SDL_DisplayMode desktopMode, bestMode, mode;
@@ -1477,12 +1634,23 @@ void Session::toggleFullscreen()
     // SDL on macOS has a bug that causes the window size to be reset to crazy
     // large dimensions when exiting out of true fullscreen mode. We can work
     // around the issue by manually resetting the position and size here.
-    if (!fullScreen && m_FullScreenFlag == SDL_WINDOW_FULLSCREEN) {
+    if (!fullScreen) {
         int x, y, width, height;
-        getWindowDimensions(x, y, width, height);
+
+        // For menu bar borderless mode, restore to menu-bar-excluded bounds (covers Dock)
+        if (m_UseMacMenuBarBorderlessWindow) {
+            int displayIndex = SDL_GetWindowDisplayIndex(m_Window);
+            getMenuBarExcludedBounds(displayIndex, x, y, width, height);
+        } else if (m_FullScreenFlag == SDL_WINDOW_FULLSCREEN) {
+            getWindowDimensions(x, y, width, height);
+        } else {
+            // For borderless fullscreen desktop mode, no need to reset
+            goto skip_window_reset;
+        }
         SDL_SetWindowSize(m_Window, width, height);
         SDL_SetWindowPosition(m_Window, x, y);
     }
+skip_window_reset:;
 #endif
 
     // Input handler might need to start/stop keyboard grab after changing modes
@@ -1532,14 +1700,25 @@ bool Session::startConnectionAsync()
         // the chosen resolution. Avoid that by disabling SOPS when it
         // is not streaming a supported resolution.
         enableGameOptimizations = false;
-        for (const NvDisplayMode &mode : std::as_const(m_Computer->displayModes)) {
-            if (mode.width == m_StreamConfig.width &&
-                    mode.height == m_StreamConfig.height) {
-                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                            "Found host supported resolution: %dx%d",
-                            mode.width, mode.height);
-                enableGameOptimizations = m_Preferences->gameOptimizations;
-                break;
+        
+        // Menu bar borderless mode uses custom resolution that may not match host modes
+        if (m_UseMacMenuBarBorderlessWindow) {
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                        "Menu bar borderless mode: disabling SOPS for custom resolution %dx%d",
+                        m_StreamConfig.width, m_StreamConfig.height);
+            // Keep enableGameOptimizations = false for custom resolution path
+        }
+        else {
+            // Check if this is a supported resolution
+            for (const NvDisplayMode &mode : std::as_const(m_Computer->displayModes)) {
+                if (mode.width == m_StreamConfig.width &&
+                        mode.height == m_StreamConfig.height) {
+                    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                                "Found host supported resolution: %dx%d",
+                                mode.width, mode.height);
+                    enableGameOptimizations = m_Preferences->gameOptimizations;
+                    break;
+                }
             }
         }
     }
@@ -1748,7 +1927,21 @@ void Session::exec()
     QCoreApplication::sendPostedEvents();
 
     int x, y, width, height;
-    getWindowDimensions(x, y, width, height);
+
+#ifdef Q_OS_DARWIN
+    // For menu bar borderless mode, use usable bounds for full window dimensions
+    if (m_UseMacMenuBarBorderlessWindow) {
+        int displayIndex = getTargetDisplayIndex();
+        getMenuBarExcludedBounds(displayIndex, x, y, width, height);
+
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "Using menu bar borderless window mode on display %d: %dx%d at (%d,%d)",
+                    displayIndex, width, height, x, y);
+    } else
+#endif
+    {
+        getWindowDimensions(x, y, width, height);
+    }
 
 #ifdef STEAM_LINK
     // We need a little delay before creating the window or we will trigger some kind
@@ -1768,6 +1961,13 @@ void Session::exec()
 
     // We always want a resizable window with High DPI enabled
     Uint32 defaultWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+
+#ifdef Q_OS_DARWIN
+    // For menu bar borderless mode, use a borderless window at usable bounds
+    if (m_UseMacMenuBarBorderlessWindow) {
+        defaultWindowFlags |= SDL_WINDOW_BORDERLESS;
+    }
+#endif
 
     // If we're starting in windowed mode and the Moonlight GUI is maximized or
     // minimized, match that with the streaming window.
@@ -1855,13 +2055,18 @@ void Session::exec()
     // for if/when we enter full-screen mode.
     updateOptimalWindowDisplayMode();
 
-    // Enter full screen if requested
-    if (m_IsFullScreen) {
+    // Enter full screen if requested (skip for menu bar borderless mode)
+    if (m_IsFullScreen && !m_UseMacMenuBarBorderlessWindow) {
         SDL_SetWindowFullscreen(m_Window, m_FullScreenFlag);
     }
 
 #ifdef Q_OS_DARWIN
     MetalHudUtils::setQtWindowHudMode(m_QtWindow, MetalHudUtils::LayerMode::Disabled);
+
+    // Hide Dock for menu bar borderless mode
+    if (m_UseMacMenuBarBorderlessWindow) {
+        MetalHudUtils::setDockHiddenForStreaming(true);
+    }
 #endif
 
     bool needsFirstEnterCapture = false;
@@ -2236,6 +2441,11 @@ void Session::exec()
 DispatchDeferredCleanup:
 #ifdef Q_OS_DARWIN
     MetalHudUtils::setQtWindowHudMode(m_QtWindow, MetalHudUtils::LayerMode::Default);
+
+    // Restore Dock visibility
+    if (m_UseMacMenuBarBorderlessWindow) {
+        MetalHudUtils::setDockHiddenForStreaming(false);
+    }
 #endif
 
     // Switch back to synchronous logging mode
