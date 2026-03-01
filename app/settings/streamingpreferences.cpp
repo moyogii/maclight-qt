@@ -61,6 +61,7 @@
 #define SER_METAL_DEBUG_LAYER_ENABLED "metalDebugLayerEnabled"
 #define SER_METAL_SHADER_VALIDATION_ENABLED "metalShaderValidationEnabled"
 #define SER_METAL_PERFORMANCE_HUD_ENABLED "metalPerformanceHudEnabled"
+#define SER_DEBUG_MODE_ENABLED "debugModeEnabled"
 #define SER_HOTKEY_TOGGLE_STATS_MODS "hotkeyToggleStatsMods"
 #define SER_HOTKEY_TOGGLE_STATS_SCAN "hotkeyToggleStatsScan"
 #define SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS "hotkeyToggleMouseModeMods"
@@ -178,6 +179,7 @@ void StreamingPreferences::reload()
     metalDebugLayerEnabled = settings.value(SER_METAL_DEBUG_LAYER_ENABLED, false).toBool();
     metalShaderValidationEnabled = settings.value(SER_METAL_SHADER_VALIDATION_ENABLED, false).toBool();
     metalPerformanceHudEnabled = settings.value(SER_METAL_PERFORMANCE_HUD_ENABLED, false).toBool();
+    debugModeEnabled = settings.value(SER_DEBUG_MODE_ENABLED, false).toBool();
     enableHdr = settings.value(SER_HDR, false).toBool();
     captureSysKeysMode = static_cast<CaptureSysKeysMode>(settings.value(SER_CAPTURESYSKEYS,
                                                          static_cast<int>(CaptureSysKeysMode::CSK_OFF)).toInt());
@@ -394,6 +396,7 @@ void StreamingPreferences::save()
     settings.setValue(SER_METAL_DEBUG_LAYER_ENABLED, metalDebugLayerEnabled);
     settings.setValue(SER_METAL_SHADER_VALIDATION_ENABLED, metalShaderValidationEnabled);
     settings.setValue(SER_METAL_PERFORMANCE_HUD_ENABLED, metalPerformanceHudEnabled);
+    settings.setValue(SER_DEBUG_MODE_ENABLED, debugModeEnabled);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_MODS, hotkeyToggleStatsModifiers);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_SCAN, hotkeyToggleStatsScanCode);
     settings.setValue(SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS, hotkeyToggleMouseModeModifiers);

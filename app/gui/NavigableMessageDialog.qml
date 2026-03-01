@@ -32,8 +32,8 @@ NavigableDialog {
         Image {
             id: dialogImage
             source: (standardButtons & Dialog.Yes) ?
-                        "qrc:/res/baseline-help_outline-24px.svg" :
-                        "qrc:/res/baseline-error_outline-24px.svg"
+                        "image://sfsymbol/questionmark.circle" :
+                        "image://sfsymbol/exclamationmark.circle"
             sourceSize {
                 // The icon should be square so use the height as the width too
                 width: 50
@@ -62,7 +62,12 @@ NavigableDialog {
         standardButtons: dialog.standardButtons
 
         delegate: Button {
+            id: dialogButton
             flat: true
+            background: Rectangle {
+                radius: 3
+                color: dialogButton.down ? "#505050" : (dialogButton.hovered ? "#484848" : "transparent")
+            }
 
             Keys.onReturnPressed: clicked()
             Keys.onEnterPressed: clicked()

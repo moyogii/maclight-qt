@@ -39,6 +39,7 @@
 #include "gui/appmodel.h"
 #include "backend/computermanager.h"
 #include "backend/systemproperties.h"
+#include "backend/sfsymbolprovider.h"
 #include "streaming/session.h"
 #include "settings/streamingpreferences.h"
 #include "gui/sdlgamepadkeynavigation.h"
@@ -417,9 +418,10 @@ int main(int argc, char *argv[])
 
 #if defined(Q_OS_DARWIN)
     QSettings settings;
-    const bool metalDebugLayerEnabled = settings.value("metalDebugLayerEnabled", false).toBool();
-    const bool metalShaderValidationEnabled = settings.value("metalShaderValidationEnabled", false).toBool();
-    const bool metalPerformanceHudEnabled = settings.value("metalPerformanceHudEnabled", false).toBool();
+    const bool debugModeEnabled = settings.value("debugModeEnabled", false).toBool();
+    const bool metalDebugLayerEnabled = debugModeEnabled && settings.value("metalDebugLayerEnabled", false).toBool();
+    const bool metalShaderValidationEnabled = debugModeEnabled && settings.value("metalShaderValidationEnabled", false).toBool();
+    const bool metalPerformanceHudEnabled = debugModeEnabled && settings.value("metalPerformanceHudEnabled", false).toBool();
 
     if (metalPerformanceHudEnabled) {
         qputenv("MTL_HUD_ENABLED", "1");
@@ -628,6 +630,7 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
+    engine.addImageProvider("sfsymbol", new SfSymbolProvider());
     QString initialView;
     bool hasGUI = true;
 

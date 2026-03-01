@@ -11,6 +11,7 @@ import SdlGamepadKeyNavigation 1.0
 
 ApplicationWindow {
     property bool pollingActive: false
+    property int versionClickCount: 0
 
     // Set by SettingsView to force the back operation to pop all
     // pages except the initial view. This is required when doing
@@ -269,7 +270,7 @@ ApplicationWindow {
                 // Only make the button visible if the user has navigated somewhere.
                 visible: stackView.depth > 1
 
-                iconSource: "qrc:/res/arrow_left.svg"
+                iconSource: "image://sfsymbol/chevron.backward"
 
                 onClicked: goBack()
 
@@ -301,13 +302,58 @@ ApplicationWindow {
                 font.pointSize: 12
                 horizontalAlignment: Qt.AlignRight
                 verticalAlignment: Qt.AlignVCenter
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!StreamingPreferences.debugModeEnabled) {
+                            versionClickCount++
+                            versionClickTimer.restart()
+                            if (versionClickCount >= 5) {
+                                StreamingPreferences.debugModeEnabled = true
+                                StreamingPreferences.save()
+                                versionClickCount = 0
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button {
+                id: debugModeToggle
+                visible: StreamingPreferences.debugModeEnabled && stackView.currentItem instanceof SettingsView
+                text: qsTr("Disable Debug Mode")
+                font.pointSize: 10
+                flat: true
+                background: Rectangle {
+                    radius: 3
+                    color: debugModeToggle.down ? "#505050" : (debugModeToggle.hovered ? "#484848" : "transparent")
+                }
+                contentItem: Text {
+                    text: debugModeToggle.text
+                    font: debugModeToggle.font
+                    color: debugModeToggle.enabled ? "#f2f2f7" : "#808080"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                onClicked: {
+                    StreamingPreferences.debugModeEnabled = false
+                    StreamingPreferences.save()
+                }
+            }
+
+            Timer {
+                id: versionClickTimer
+                interval: 2000
+                onTriggered: versionClickCount = 0
             }
 
             NavigableToolButton {
                 id: addPcButton
                 visible: stackView.currentItem instanceof PcView
 
-                iconSource:  "qrc:/res/ic_add_to_queue_white_48px.svg"
+                iconSource: "image://sfsymbol/plus.circle"
 
                 ToolTip.delay: 1000
                 ToolTip.timeout: 3000
@@ -330,31 +376,6 @@ ApplicationWindow {
             }
 
             NavigableToolButton {
-                id: helpButton
-                visible: SystemProperties.hasBrowser
-
-                iconSource: "qrc:/res/question_mark.svg"
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Help") + (helpShortcut.nativeText ? (" ("+helpShortcut.nativeText+")") : "")
-
-                Shortcut {
-                    id: helpShortcut
-                    sequence: StandardKey.HelpContents
-                    onActivated: helpButton.clicked()
-                }
-
-                // TODO need to make sure browser is brought to foreground.
-                onClicked: Qt.openUrlExternally("https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide");
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
                 // TODO: Implement gamepad mapping then unhide this button
                 visible: false
 
@@ -363,7 +384,7 @@ ApplicationWindow {
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Gamepad Mapper")
 
-                iconSource: "qrc:/res/ic_videogame_asset_white_48px.svg"
+                iconSource: "image://sfsymbol/gamecontroller.fill"
 
                 onClicked: navigateTo("qrc:/gui/GamepadMapper.qml", GamepadMapper)
 
@@ -375,7 +396,7 @@ ApplicationWindow {
             NavigableToolButton {
                 id: settingsButton
 
-                iconSource:  "qrc:/res/settings.svg"
+                iconSource: "image://sfsymbol/gearshape.fill"
 
                 onClicked: navigateTo("qrc:/gui/SettingsView.qml", SettingsView)
 

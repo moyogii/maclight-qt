@@ -187,15 +187,25 @@ NavigableDialog {
             Layout.alignment: Qt.AlignHCenter
 
             Button {
+                id: cancelButton
                 text: qsTr("Cancel")
+                background: Rectangle {
+                    radius: 3
+                    color: cancelButton.down ? "#505050" : (cancelButton.hovered ? "#484848" : "#424242")
+                }
                 onClicked: {
                     hotkeyCaptureDialog.reject();
                 }
             }
 
             Button {
+                id: clearButton
                 text: qsTr("Clear")
                 visible: hotkeyCaptureDialog.hasCapturedKey || hotkeyCaptureDialog.capturedModifiers !== 0
+                background: Rectangle {
+                    radius: 3
+                    color: clearButton.down ? "#505050" : (clearButton.hovered ? "#484848" : "#424242")
+                }
                 onClicked: {
                     hotkeyCaptureDialog.capturedModifiers = 0;
                     hotkeyCaptureDialog.capturedScanCode = 0;
@@ -205,8 +215,13 @@ NavigableDialog {
             }
 
             Button {
+                id: confirmButton
                 text: qsTr("Confirm")
                 enabled: hotkeyCaptureDialog.hasCapturedKey || (hotkeyCaptureDialog.capturedModifiers === 0 && hotkeyCaptureDialog.capturedScanCode === 0)
+                background: Rectangle {
+                    radius: 3
+                    color: confirmButton.enabled ? (confirmButton.down ? "#505050" : (confirmButton.hovered ? "#484848" : "#424242")) : "#333333"
+                }
                 onClicked: {
                     hotkeyCaptureDialog.hotkeyCaptured(hotkeyCaptureDialog.capturedModifiers, hotkeyCaptureDialog.capturedScanCode);
                     hotkeyCaptureDialog.accept();

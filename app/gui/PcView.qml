@@ -115,24 +115,36 @@ CenteredGridView {
         Image {
             id: pcIcon
             anchors.horizontalCenter: parent.horizontalCenter
-            source: "qrc:/res/desktop_windows-48px.svg"
+            source: "image://sfsymbol/macwindow"
             sourceSize {
-                width: 200
+                width: 228
                 height: 200
             }
         }
 
         Image {
-            // TODO: Tooltip
             id: stateIcon
             anchors.horizontalCenter: pcIcon.horizontalCenter
             anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: !model.online ? -18 : -16
-            visible: !model.statusUnknown && (!model.online || !model.paired)
-            source: !model.online ? "qrc:/res/warning_FILL1_wght300_GRAD200_opsz24.svg" : "qrc:/res/baseline-lock-24px.svg"
+            anchors.verticalCenterOffset: 5
+            visible: !model.statusUnknown && !model.online
+            source: "image://sfsymbol/exclamationmark.triangle.fill"
             sourceSize {
-                width: !model.online ? 75 : 70
-                height: !model.online ? 75 : 70
+                width: 60
+                height: 60
+            }
+        }
+
+        Image {
+            id: lockIcon
+            anchors.horizontalCenter: pcIcon.horizontalCenter
+            anchors.verticalCenter: pcIcon.verticalCenter
+            anchors.verticalCenterOffset: 5
+            visible: !model.statusUnknown && model.online
+            source: model.paired ? "image://sfsymbol/lock.open" : "image://sfsymbol/lock.fill"
+            sourceSize {
+                width: 56
+                height: 56
             }
         }
 
@@ -140,9 +152,9 @@ CenteredGridView {
             id: statusUnknownSpinner
             anchors.horizontalCenter: pcIcon.horizontalCenter
             anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: -15
-            width: 75
-            height: 75
+            anchors.verticalCenterOffset: 5
+            width: 60
+            height: 60
             visible: model.statusUnknown
             running: visible
         }
@@ -329,16 +341,16 @@ CenteredGridView {
         {
             if (result === -1) {
                 text = qsTr("The network test could not be performed because none of Maclight's connection testing servers were reachable from this PC. Check your Internet connection or try again later.")
-                imageSrc = "qrc:/res/baseline-warning-24px.svg"
+                imageSrc = "image://sfsymbol/exclamationmark.triangle"
             }
             else if (result === 0) {
                 text = qsTr("This network does not appear to be blocking Maclight. If you still have trouble connecting, check your PC's firewall settings.")
-                imageSrc = "qrc:/res/baseline-check_circle_outline-24px.svg"
+                imageSrc = "image://sfsymbol/checkmark.circle"
             }
             else {
                 text = qsTr("Your PC's current network connection seems to be blocking Maclight. Streaming over the Internet may not work while connected to this network.") + "\n\n" + qsTr("The following network ports were blocked:") + "\n"
                 text += blockedPorts
-                imageSrc = "qrc:/res/baseline-error_outline-24px.svg"
+                imageSrc = "image://sfsymbol/exclamationmark.circle"
             }
 
             // Stop showing the spinner and show the image instead
@@ -396,7 +408,7 @@ CenteredGridView {
         id: showPcDetailsDialog
         property string pcDetails : "";
         text: showPcDetailsDialog.pcDetails
-        imageSrc: "qrc:/res/baseline-help_outline-24px.svg"
+        imageSrc: "image://sfsymbol/questionmark.circle"
         standardButtons: Dialog.Ok
     }
 

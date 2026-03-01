@@ -719,6 +719,10 @@ Flickable {
                         id: resetBitrateButton
                         text: qsTr("Use Default (%1 Mbps)").arg(StreamingPreferences.getDefaultBitrate(StreamingPreferences.width, StreamingPreferences.height, StreamingPreferences.fps, StreamingPreferences.enableYUV444) / 1000.0)
                         visible: StreamingPreferences.bitrateKbps !== StreamingPreferences.getDefaultBitrate(StreamingPreferences.width, StreamingPreferences.height, StreamingPreferences.fps, StreamingPreferences.enableYUV444)
+                        background: Rectangle {
+                            radius: 3
+                            color: resetBitrateButton.down ? "#505050" : (resetBitrateButton.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             var defaultBitrate = StreamingPreferences.getDefaultBitrate(StreamingPreferences.width, StreamingPreferences.height, StreamingPreferences.fps, StreamingPreferences.enableYUV444)
                             StreamingPreferences.bitrateKbps = defaultBitrate
@@ -1782,6 +1786,10 @@ Flickable {
                     hoverEnabled: true
                     visible: Qt.platform.os === "osx"
                     enabled: StreamingPreferences.awdlFirstRunShown
+                    background: Rectangle {
+                        radius: 3
+                        color: resetAwdlChoiceButton.enabled ? (resetAwdlChoiceButton.down ? "#505050" : (resetAwdlChoiceButton.hovered ? "#484848" : "#424242")) : "#333333"
+                    }
 
                     onClicked: {
                         StreamingPreferences.awdlFirstRunShown = false
@@ -1798,7 +1806,7 @@ Flickable {
                 Item {
                     width: parent.width
                     height: 14
-                    visible: Qt.platform.os === "osx"
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
                 }
 
                 Label {
@@ -1806,7 +1814,7 @@ Flickable {
                     text: qsTr("Metal Debug Settings")
                     font.pointSize: 12
                     wrapMode: Text.Wrap
-                    visible: Qt.platform.os === "osx"
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
                 }
 
                 CheckBox {
@@ -1814,7 +1822,7 @@ Flickable {
                     width: parent.width
                     text: qsTr("Enable Metal performance HUD")
                     font.pointSize: 12
-                    visible: Qt.platform.os === "osx"
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
                     checked: StreamingPreferences.metalPerformanceHudEnabled
 
                     onCheckedChanged: {
@@ -1834,7 +1842,7 @@ Flickable {
                     width: parent.width
                     text: qsTr("Enable Metal debug layer (MTL_DEBUG_LAYER)")
                     font.pointSize: 12
-                    visible: Qt.platform.os === "osx"
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
                     checked: StreamingPreferences.metalDebugLayerEnabled
 
                     onCheckedChanged: {
@@ -1854,7 +1862,7 @@ Flickable {
                     width: parent.width
                     text: qsTr("Enable Metal shader validation (MTL_SHADER_VALIDATION)")
                     font.pointSize: 12
-                    visible: Qt.platform.os === "osx"
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
                     checked: StreamingPreferences.metalShaderValidationEnabled
 
                     onCheckedChanged: {
@@ -1913,7 +1921,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeToggleStatsBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeToggleStatsBtn.down ? "#505050" : (changeToggleStatsBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             toggleStatsHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleStatsModifiers
                             toggleStatsHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleStatsScanCode
@@ -1944,7 +1957,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeToggleMouseModeBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeToggleMouseModeBtn.down ? "#505050" : (changeToggleMouseModeBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             toggleMouseModeHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleMouseModeModifiers
                             toggleMouseModeHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleMouseModeScanCode
@@ -1975,7 +1993,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeCaptureSysKeysBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeCaptureSysKeysBtn.down ? "#505050" : (changeCaptureSysKeysBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             toggleCaptureSysKeysHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers
                             toggleCaptureSysKeysHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode
@@ -2006,7 +2029,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeExitStreamBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeExitStreamBtn.down ? "#505050" : (changeExitStreamBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             exitStreamHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyExitStreamModifiers
                             exitStreamHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyExitStreamScanCode
@@ -2017,17 +2045,21 @@ Flickable {
                 }
 
                 Button {
+                    id: resetHotkeysBtn
                     text: qsTr("Reset Hotkeys to Defaults")
+                    background: Rectangle {
+                        radius: 3
+                        color: resetHotkeysBtn.down ? "#505050" : (resetHotkeysBtn.hovered ? "#484848" : "#424242")
+                    }
                     onClicked: {
-                        // Ctrl+Alt+Shift = 0x3C3 = 963
                         StreamingPreferences.hotkeyToggleStatsModifiers = 0x3C3
-                        StreamingPreferences.hotkeyToggleStatsScanCode = 22  // SDL_SCANCODE_S
+                        StreamingPreferences.hotkeyToggleStatsScanCode = 22
                         StreamingPreferences.hotkeyToggleMouseModeModifiers = 0x3C3
-                        StreamingPreferences.hotkeyToggleMouseModeScanCode = 16  // SDL_SCANCODE_M
+                        StreamingPreferences.hotkeyToggleMouseModeScanCode = 16
                         StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers = 0x3C3
-                        StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode = 14  // SDL_SCANCODE_K
+                        StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode = 14
                         StreamingPreferences.hotkeyExitStreamModifiers = 0x3C3
-                        StreamingPreferences.hotkeyExitStreamScanCode = 8    // SDL_SCANCODE_E
+                        StreamingPreferences.hotkeyExitStreamScanCode = 8
                     }
                 }
             }

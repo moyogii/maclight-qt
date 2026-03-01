@@ -153,6 +153,7 @@ public:
     Q_PROPERTY(bool metalDebugLayerEnabled MEMBER metalDebugLayerEnabled NOTIFY metalDebugLayerEnabledChanged)
     Q_PROPERTY(bool metalShaderValidationEnabled MEMBER metalShaderValidationEnabled NOTIFY metalShaderValidationEnabledChanged)
     Q_PROPERTY(bool metalPerformanceHudEnabled MEMBER metalPerformanceHudEnabled NOTIFY metalPerformanceHudEnabledChanged)
+    Q_PROPERTY(bool debugModeEnabled MEMBER debugModeEnabled NOTIFY debugModeEnabledChanged)
     Q_PROPERTY(int hotkeyToggleStatsModifiers MEMBER hotkeyToggleStatsModifiers NOTIFY hotkeyToggleStatsChanged)
     Q_PROPERTY(int hotkeyToggleStatsScanCode MEMBER hotkeyToggleStatsScanCode NOTIFY hotkeyToggleStatsChanged)
     Q_PROPERTY(int hotkeyToggleMouseModeModifiers MEMBER hotkeyToggleMouseModeModifiers NOTIFY hotkeyToggleMouseModeChanged)
@@ -210,6 +211,7 @@ public:
     bool metalDebugLayerEnabled;
     bool metalShaderValidationEnabled;
     bool metalPerformanceHudEnabled;
+    bool debugModeEnabled;
     int hotkeyToggleStatsModifiers;
     int hotkeyToggleStatsScanCode;
     int hotkeyToggleMouseModeModifiers;
@@ -272,6 +274,7 @@ signals:
     void metalDebugLayerEnabledChanged();
     void metalShaderValidationEnabledChanged();
     void metalPerformanceHudEnabledChanged();
+    void debugModeEnabledChanged();
 
     void hotkeyToggleStatsChanged();
     void hotkeyToggleMouseModeChanged();

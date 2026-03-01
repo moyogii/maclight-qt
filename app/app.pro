@@ -47,10 +47,12 @@ macx {
 
     SOURCES += \
         backend/macosaccent.mm \
+        backend/sfsymbolprovider.mm \
         settings/awdlcontroller.cpp
 
     HEADERS += \
         backend/macosaccent.h \
+        backend/sfsymbolprovider.h \
         settings/awdlcontroller.h
 }
 
