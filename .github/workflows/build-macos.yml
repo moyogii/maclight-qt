@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-26
     permissions:
       contents: write
     
@@ -25,6 +25,17 @@ jobs:
       with:
         submodules: recursive
         fetch-depth: 0
+
+    - name: Verify Tahoe+ environment
+      run: |
+        MACOS_MAJOR=$(sw_vers -productVersion | cut -d'.' -f1)
+        if [ "$MACOS_MAJOR" -lt 26 ]; then
+          echo "Expected macOS Tahoe (26) or newer. Got $(sw_vers -productVersion)."
+          exit 1
+        fi
+
+        xcodebuild -version
+        xcodebuild -showsdks
         
     - name: Generate version and changelog
       id: version
@@ -72,10 +83,11 @@ jobs:
         
     - name: Install dependencies
       run: |
-        brew install qt@6 node
+        brew install qt@6 pkg-config node
         npm install --global create-dmg
-        echo "/opt/homebrew/bin" >> $GITHUB_PATH
-        echo "/opt/homebrew/opt/qt@6/bin" >> $GITHUB_PATH
+        BREW_PREFIX=$(brew --prefix)
+        echo "${BREW_PREFIX}/bin" >> $GITHUB_PATH
+        echo "${BREW_PREFIX}/opt/qt@6/bin" >> $GITHUB_PATH
 
     - name: Build and Package
       env:

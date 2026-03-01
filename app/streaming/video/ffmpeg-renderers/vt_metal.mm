@@ -22,6 +22,12 @@ extern "C" int LiGetPendingVideoFrames(void);
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 
+#if __has_include(<Metal/MTL4Compiler.h>) && __has_include(<Metal/MTL4LibraryDescriptor.h>) && __has_include(<Metal/MTL4RenderPipeline.h>)
+#define HAVE_MTL4_COMPILER 1
+#else
+#define HAVE_MTL4_COMPILER 0
+#endif
+
 extern "C" {
     #include <libavutil/pixdesc.h>
 }
@@ -406,39 +412,71 @@ public:
                                                          bool blendingEnabled,
                                                          MTLPixelFormat pixelFormat)
     {
-        auto pipelineDesc = [[MTL4RenderPipelineDescriptor new] autorelease];
+#if HAVE_MTL4_COMPILER
+        if (m_ShaderCompiler != nil) {
+            auto pipelineDesc = [[MTL4RenderPipelineDescriptor new] autorelease];
 
-        auto vertexFunctionDesc = [[MTL4LibraryFunctionDescriptor new] autorelease];
-        vertexFunctionDesc.library = m_ShaderLibrary;
-        vertexFunctionDesc.name = @"vs_draw";
-        pipelineDesc.vertexFunctionDescriptor = vertexFunctionDesc;
+            auto vertexFunctionDesc = [[MTL4LibraryFunctionDescriptor new] autorelease];
+            vertexFunctionDesc.library = m_ShaderLibrary;
+            vertexFunctionDesc.name = @"vs_draw";
+            pipelineDesc.vertexFunctionDescriptor = vertexFunctionDesc;
 
-        auto fragmentFunctionDesc = [[MTL4LibraryFunctionDescriptor new] autorelease];
-        fragmentFunctionDesc.library = m_ShaderLibrary;
-        fragmentFunctionDesc.name = fragmentFunctionName;
-        pipelineDesc.fragmentFunctionDescriptor = fragmentFunctionDesc;
+            auto fragmentFunctionDesc = [[MTL4LibraryFunctionDescriptor new] autorelease];
+            fragmentFunctionDesc.library = m_ShaderLibrary;
+            fragmentFunctionDesc.name = fragmentFunctionName;
+            pipelineDesc.fragmentFunctionDescriptor = fragmentFunctionDesc;
 
-        MTL4RenderPipelineColorAttachmentDescriptor* colorAttachmentDesc = pipelineDesc.colorAttachments[0];
-        colorAttachmentDesc.pixelFormat = pixelFormat;
-        colorAttachmentDesc.blendingState = blendingEnabled ? MTL4BlendStateEnabled
-                                                            : MTL4BlendStateDisabled;
+            MTL4RenderPipelineColorAttachmentDescriptor* colorAttachmentDesc = pipelineDesc.colorAttachments[0];
+            colorAttachmentDesc.pixelFormat = pixelFormat;
+            colorAttachmentDesc.blendingState = blendingEnabled ? MTL4BlendStateEnabled
+                                                                : MTL4BlendStateDisabled;
+
+            if (blendingEnabled) {
+                colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
+                colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
+                colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+                colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+                colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+                colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            }
+
+            NSError* error = nil;
+            auto pipelineState = [m_ShaderCompiler newRenderPipelineStateWithDescriptor:pipelineDesc
+                                                                      compilerTaskOptions:nil
+                                                                                    error:&error];
+            if (pipelineState == nil) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "Failed to create %s pipeline state via MTL4Compiler for pixel format %s: %s",
+                             fragmentFunctionName.UTF8String,
+                             pixelFormatToString(pixelFormat),
+                             metalErrorString(error));
+            }
+
+            return pipelineState;
+        }
+#endif
+
+        auto pipelineDesc = [[MTLRenderPipelineDescriptor new] autorelease];
+
+        pipelineDesc.vertexFunction = [[m_ShaderLibrary newFunctionWithName:@"vs_draw"] autorelease];
+        pipelineDesc.fragmentFunction = [[m_ShaderLibrary newFunctionWithName:fragmentFunctionName] autorelease];
+        pipelineDesc.colorAttachments[0].pixelFormat = pixelFormat;
+        pipelineDesc.colorAttachments[0].blendingEnabled = blendingEnabled;
 
         if (blendingEnabled) {
-            colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
-            colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
-            colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-            colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-            colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-            colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            pipelineDesc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+            pipelineDesc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+            pipelineDesc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+            pipelineDesc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+            pipelineDesc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            pipelineDesc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
         }
 
         NSError* error = nil;
-        auto pipelineState = [m_ShaderCompiler newRenderPipelineStateWithDescriptor:pipelineDesc
-                                                                 compilerTaskOptions:nil
-                                                                               error:&error];
+        auto pipelineState = [m_MetalLayer.device newRenderPipelineStateWithDescriptor:pipelineDesc error:&error];
         if (pipelineState == nil) {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                         "Failed to create %s pipeline state via MTL4Compiler for pixel format %s: %s",
+                         "Failed to create %s pipeline state for pixel format %s: %s",
                          fragmentFunctionName.UTF8String,
                          pixelFormatToString(pixelFormat),
                          metalErrorString(error));
@@ -1205,19 +1243,6 @@ public:
             return false;
         }
 
-        // Create our shader compiler
-        auto compilerDesc = [[MTL4CompilerDescriptor new] autorelease];
-        compilerDesc.label = @"Maclight VT shader compiler";
-
-        NSError* error = nil;
-        m_ShaderCompiler = [m_MetalLayer.device newCompilerWithDescriptor:compilerDesc error:&error];
-        if (m_ShaderCompiler == nullptr) {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                         "Failed to create MTL4Compiler: %s",
-                         metalErrorString(error));
-            return false;
-        }
-
         // Compile our shaders
         QString shaderSource = QString::fromUtf8(Path::readDataFile("vt_renderer.metal"));
         if (shaderSource.isEmpty()) {
@@ -1226,17 +1251,48 @@ public:
             return false;
         }
 
-        auto libraryDesc = [[MTL4LibraryDescriptor new] autorelease];
-        libraryDesc.name = @"vt_renderer";
-        libraryDesc.source = shaderSource.toNSString();
+        NSError* error = nil;
 
-        error = nil;
-        m_ShaderLibrary = [m_ShaderCompiler newLibraryWithDescriptor:libraryDesc error:&error];
-        if (!m_ShaderLibrary) {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                         "Failed to compile shaders with MTL4Compiler: %s",
-                         metalErrorString(error));
-            return false;
+#if HAVE_MTL4_COMPILER
+        if ([m_MetalLayer.device respondsToSelector:@selector(newCompilerWithDescriptor:error:)]) {
+            auto compilerDesc = [[MTL4CompilerDescriptor new] autorelease];
+            compilerDesc.label = @"Maclight VT shader compiler";
+
+            m_ShaderCompiler = [m_MetalLayer.device newCompilerWithDescriptor:compilerDesc error:&error];
+            if (m_ShaderCompiler != nil) {
+                auto libraryDesc = [[MTL4LibraryDescriptor new] autorelease];
+                libraryDesc.name = @"vt_renderer";
+                libraryDesc.source = shaderSource.toNSString();
+
+                error = nil;
+                m_ShaderLibrary = [m_ShaderCompiler newLibraryWithDescriptor:libraryDesc error:&error];
+                if (m_ShaderLibrary != nil) {
+                    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                                "Using MTL4 shader compiler for VT renderer pipelines");
+                }
+                else {
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                                "MTL4 shader library compilation failed; falling back to legacy Metal compiler: %s",
+                                metalErrorString(error));
+                }
+            }
+            else {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                            "MTL4 compiler creation failed; falling back to legacy Metal compiler: %s",
+                            metalErrorString(error));
+            }
+        }
+#endif
+
+        if (m_ShaderLibrary == nil) {
+            error = nil;
+            m_ShaderLibrary = [m_MetalLayer.device newLibraryWithSource:shaderSource.toNSString() options:nil error:&error];
+            if (!m_ShaderLibrary) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "Failed to compile shaders: %s",
+                             metalErrorString(error));
+                return false;
+            }
         }
 
         if (!prewarmPipelines(!!(params->videoFormat & VIDEO_FORMAT_MASK_10BIT))) {
@@ -1544,7 +1600,11 @@ private:
     id<MTLRenderPipelineState> m_CachedVideoPipelineStates[k_PipelinePixelFormatCount][k_VideoPipelineVariantCount];
     id<MTLRenderPipelineState> m_CachedOverlayPipelineStates[k_PipelinePixelFormatCount];
     id<MTLRenderPipelineState> m_CachedSolidPipelineStates[k_PipelinePixelFormatCount];
+#if HAVE_MTL4_COMPILER
     id<MTL4Compiler> m_ShaderCompiler;
+#else
+    id m_ShaderCompiler;
+#endif
     id<MTLLibrary> m_ShaderLibrary;
     id<MTLCommandQueue> m_CommandQueue;
 
