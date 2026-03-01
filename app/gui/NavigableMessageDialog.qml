@@ -20,40 +20,44 @@ NavigableDialog {
         }
     }
 
-    RowLayout {
-        spacing: 10
+    contentItem: Item {
+        implicitWidth: rowLayout.implicitWidth
+        implicitHeight: rowLayout.implicitHeight
 
-        BusyIndicator {
-            id: dialogSpinner
-            visible: false
-            running: visible
-        }
+        RowLayout {
+            id: rowLayout
+            anchors.fill: parent
+            spacing: 10
 
-        Image {
-            id: dialogImage
-            source: (standardButtons & Dialog.Yes) ?
-                        "image://sfsymbol/questionmark.circle" :
-                        "image://sfsymbol/exclamationmark.circle"
-            sourceSize {
-                // The icon should be square so use the height as the width too
-                width: 50
-                height: 50
+            BusyIndicator {
+                id: dialogSpinner
+                visible: false
+                running: visible
             }
-            visible: !showSpinner
-        }
 
-        Label {
-            property string dialogText
+            Image {
+                id: dialogImage
+                source: (standardButtons & Dialog.Yes) ?
+                            "image://sfsymbol/questionmark.circle" :
+                            "image://sfsymbol/exclamationmark.circle"
+                sourceSize {
+                    width: 50
+                    height: 50
+                }
+                visible: !showSpinner
+            }
 
-            id: dialogLabel
-            text: dialogText + ((helpText && (standardButtons & Dialog.Help)) ? (helpTextSeparator + helpText) : "")
-            wrapMode: Text.Wrap
-            elide: Label.ElideRight
+            Label {
+                property string dialogText
 
-            // Cap the width so the dialog doesn't grow horizontally forever. This
-            // will cause word wrap to kick in.
-            Layout.maximumWidth: 400
-            Layout.maximumHeight: 400
+                id: dialogLabel
+                text: dialogText + ((helpText && (standardButtons & Dialog.Help)) ? (helpTextSeparator + helpText) : "")
+                wrapMode: Text.Wrap
+                elide: Label.ElideRight
+
+                Layout.maximumWidth: 400
+                Layout.maximumHeight: 400
+            }
         }
     }
 
@@ -64,6 +68,13 @@ NavigableDialog {
         delegate: Button {
             id: dialogButton
             flat: true
+            contentItem: Text {
+                text: dialogButton.text
+                font: dialogButton.font
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
             background: Rectangle {
                 radius: 3
                 color: dialogButton.down ? "#505050" : (dialogButton.hovered ? "#484848" : "transparent")
