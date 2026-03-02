@@ -532,10 +532,11 @@ ApplicationWindow {
         id: addPcDialog
         property string label: qsTr("Enter the IP address of your host PC:")
 
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        footer: DialogOkCancelButtonBox {
+            targetDialog: addPcDialog
+        }
 
         onOpened: {
-            // Force keyboard focus on the textbox so keyboard navigation works
             editText.forceActiveFocus()
         }
 
