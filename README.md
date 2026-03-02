@@ -1,9 +1,9 @@
 # Maclight (Moonlight fork for MacOS)
 
 ## Disclaimer
-Maclight is a fork of the [official Moonlight client](https://github.com/moonlight-stream/moonlight-qt) created to learn more about PC streaming and the MacOS operating system to optimize it for my specific needs. Due to this, it has a bunch of experimental/in-progress features that may or may not work for you. This is **NOT** meant to be a replacement for Moonlight. I *really* recommend using the official Mac client for a stable experience to support the original developers of Moonlight and their hard work as without them this fork would not be possible. 
+Maclight is a fork of the [official Moonlight client](https://github.com/moonlight-stream/moonlight-qt) created to learn more about PC streaming and the MacOS operating system to optimize it for my specific needs. Due to this, it has a bunch of experimental/in-progress features that may or may not work for you. This project should be seen more as a supplementary fork to Moonlight rather than a replacement. I *really* recommend using the official Mac client for the most stable experience to support the original developers of Moonlight and their hard work as without them this fork would not be possible. 
 
-Occasionally this fork will pull in relevant changes from [moonlight-common-c](https://github.com/moonlight-stream/moonlight-common-c) and [moonlight-qt](https://github.com/moonlight-stream/moonlight-qt) to keep it as up to date as possible with the original app.
+Occasionally, this fork will pull in relevant changes from [moonlight-common-c](https://github.com/moonlight-stream/moonlight-common-c) and [moonlight-qt](https://github.com/moonlight-stream/moonlight-qt) to keep it as up to date as possible with the original app.
 
 ## Features
  - Hardware accelerated video decoding on Mac
@@ -19,8 +19,9 @@ Occasionally this fork will pull in relevant changes from [moonlight-common-c](h
  - Game Mode support
  - Clipboard Sync (Requires [Apollo](https://github.com/ClassicOldSong/Apollo) or [Vibepollo](https://github.com/Nonary/Vibepollo))
  - Programmable Hotkeys (Toggle Performance Overlay, Exit Stream, Toggle Mouse Mode, Toggle Stream Audio, etc.)
- - Toast notifications
  - Win/Alt Swap support (Useful for MacOS -> Windows host streaming)
+ - Menu bar toggle for Borderless Fullscreen
+ - Toast notifications
  
 ## Downloads
 - [macOS](https://github.com/moyogii/maclight-qt/releases)
@@ -28,9 +29,9 @@ Occasionally this fork will pull in relevant changes from [moonlight-common-c](h
 ## Building on macOS
 
 ### Requirements
-* macOS 15.0 (Tahoe) or later
-* Xcode 14 or later (install from the App Store, or use `xcode-select --install` for command line tools)
-* Qt 6.9.2 SDK or later
+* macOS 26.0 (Tahoe) or later
+* Xcode 26 or later (install from the App Store, or use `xcode-select --install` for command line tools)
+* Qt 6.10.2 or later
 * [create-dmg](https://github.com/sindresorhus/create-dmg) (only needed for building distributable DMGs)
 
 ### Step 1: Install Dependencies
@@ -38,7 +39,7 @@ Occasionally this fork will pull in relevant changes from [moonlight-common-c](h
 Install Homebrew if you don't have it (see https://brew.sh), then install the required packages:
 
 ```bash
-brew install qt@6 pkg-config node
+brew install qt@6 pkg-config
 ```
 
 For DMG packaging (optional, only needed for distribution):
@@ -49,8 +50,8 @@ npm install --global create-dmg
 ### Step 2: Clone and Initialize Submodules
 
 ```bash
-git clone --recursive https://github.com/moyogii/moonlight-mac.git
-cd moonlight-mac
+git clone --recursive https://github.com/moyogii/maclight-qt.git
+cd maclight-qt
 ```
 
 If you already cloned without `--recursive`, pull in the submodules:
@@ -58,7 +59,7 @@ If you already cloned without `--recursive`, pull in the submodules:
 git submodule update --init --recursive
 ```
 
-This pulls in all dependencies including FFmpeg, SDL2, OpenSSL, and opus from the `libs` submodule.
+This pulls in all dependencies including FFmpeg, SDL3, OpenSSL, and opus from the `libs` submodule.
 
 ### Step 3: Verify Build Environment
 
@@ -85,7 +86,7 @@ make release
 **Build a distributable DMG:**
 ```bash
 bash scripts/generate-dmg.sh Release   # or Debug
-# Output: build/installer-Release/Moonlight-<version>.dmg
+# Output: build/installer-Release/Maclight-<version>.dmg
 ```
 
 You can also open `moonlight-qt.pro` in Qt Creator instead of building from the command line.
