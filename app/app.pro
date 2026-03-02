@@ -260,19 +260,12 @@ DEPENDPATH += $$PWD/../h264bitstream/h264bitstream
 macx {
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 26.0
 
-    # Create Info.plist in object dir with the correct version string
-    system(cp $$PWD/Info.plist $$OUT_PWD/Info.plist)
-    system(sed -i -e 's/VERSION/$$cat(version.txt)/g' $$OUT_PWD/Info.plist)
-
-    QMAKE_INFO_PLIST = $$OUT_PWD/Info.plist
+    QMAKE_INFO_PLIST = $$PWD/Info.plist
 
     APP_BUNDLE_RESOURCES.files = maclight.icns
     APP_BUNDLE_RESOURCES.path = Contents/Resources
 
-    APP_BUNDLE_PLIST.files = $$OUT_PWD/Info.plist
-    APP_BUNDLE_PLIST.path = Contents
-
-    QMAKE_BUNDLE_DATA += APP_BUNDLE_RESOURCES APP_BUNDLE_PLIST
+    QMAKE_BUNDLE_DATA += APP_BUNDLE_RESOURCES
 
     !disable-prebuilts {
         APP_BUNDLE_FRAMEWORKS.files = $$files(../libs/mac/Frameworks/*.framework, true) $$files(../libs/mac/lib/*.dylib, true)

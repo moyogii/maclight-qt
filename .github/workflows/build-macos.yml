@@ -7,8 +7,8 @@ on:
     branches: [ master, main ]
   workflow_dispatch:
     inputs:
-      DISABLE_RELEASE:
-        description: 'Skip the release step when set to true'
+      PUBLISH_PRERELEASE:
+        description: 'Publish as a GitHub pre-release when true'
         required: false
         default: 'false'
         type: boolean
@@ -18,6 +18,9 @@ jobs:
     runs-on: macos-26
     permissions:
       contents: write
+    env:
+      PUBLISH_PRERELEASE_INPUT: ${{ inputs.PUBLISH_PRERELEASE && 'true' || 'false' }}
+      REF_NAME: ${{ github.ref_name }}
     
     steps:
     - name: Checkout repository
@@ -40,23 +43,27 @@ jobs:
     - name: Generate version and changelog
       id: version
       run: |
-        # Get base version
         BASE_VERSION=$(cat app/version.txt | cut -d'.' -f1-2)
-        
-        # Check if this is a pre-release (DISABLE_RELEASE is set)
-        if [ "${{ github.event.inputs.DISABLE_RELEASE }}" = "true" ]; then
-          FULL_VERSION="${BASE_VERSION}-pre"
+        BUILD_NUMBER=${{ github.run_number }}
+
+        if [ "$PUBLISH_PRERELEASE_INPUT" = "true" ]; then
+          REF_SLUG=$(printf '%s' "$REF_NAME" | tr '[:upper:]' '[:lower:]' | tr '/ _' '-' | tr -cd 'a-z0-9.-')
+          if [ -z "$REF_SLUG" ]; then
+            REF_SLUG="build"
+          fi
+          FULL_VERSION="${BASE_VERSION}.${BUILD_NUMBER}-pre.${REF_SLUG}"
         else
-          BUILD_NUMBER=${{ github.run_number }}
           FULL_VERSION="${BASE_VERSION}.${BUILD_NUMBER}"
         fi
-        
-        # Update version.txt with the new version
+
         echo "$FULL_VERSION" > app/version.txt
-        
-        # Get the last release tag to compare against
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-        
+
+        if [ "$PUBLISH_PRERELEASE_INPUT" = "true" ]; then
+          LAST_TAG=$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+        else
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        fi
+
         if [ -n "$LAST_TAG" ]; then
           echo "### Commits since $LAST_TAG:" >> changelog.md
           echo "" >> changelog.md
@@ -76,15 +83,11 @@ jobs:
         else
           echo "**Full Changelog**: https://github.com/${{ github.repository }}/commits/v${FULL_VERSION}" >> changelog.md
         fi
-        
-        # Output variables for later steps
+
         echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
         echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
-        if [ -n "$BUILD_NUMBER" ]; then
-          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
-        fi
-        
-        # Display version info
+        echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+
         echo "Generated version: $FULL_VERSION"
         echo "Changelog preview:"
         cat changelog.md
@@ -117,8 +120,10 @@ jobs:
         path: build/installer-Release/*.dsym/*
 
     - name: Create Release
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event.inputs.DISABLE_RELEASE != 'true'
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
       uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ steps.version.outputs.version }}
         name: "Maclight v${{ steps.version.outputs.version }}"
@@ -126,7 +131,5 @@ jobs:
         files: |
           build/installer-Release/Maclight-${{ steps.version.outputs.version }}.dmg
         draft: false
-        prerelease: false
-        make_latest: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        prerelease: ${{ env.PUBLISH_PRERELEASE_INPUT == 'true' }}
+        make_latest: ${{ env.PUBLISH_PRERELEASE_INPUT == 'true' && 'false' || 'true' }}
