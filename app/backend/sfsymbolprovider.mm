@@ -21,11 +21,12 @@ QImage SfSymbolProvider::requestImage(const QString& id, QSize* size, const QSiz
 #ifdef Q_OS_DARWIN
     @autoreleasepool {
         QString symbolName = id;
-        qreal dpr = qApp ? qApp->devicePixelRatio() : 1.0;
-        int targetWidth = requestedSize.isEmpty() ? 24 : requestedSize.width();
-        int targetHeight = requestedSize.isEmpty() ? 24 : requestedSize.height();
-        int renderWidth = static_cast<int>(targetWidth * dpr);
-        int renderHeight = static_cast<int>(targetHeight * dpr);
+
+        int renderWidth = requestedSize.isEmpty() ? 24 : requestedSize.width();
+        int renderHeight = requestedSize.isEmpty() ? 24 : requestedSize.height();
+
+        if (renderWidth <= 0) renderWidth = 24;
+        if (renderHeight <= 0) renderHeight = 24;
 
         NSString* nsSymbolName = symbolName.toNSString();
 
@@ -83,17 +84,13 @@ QImage SfSymbolProvider::requestImage(const QString& id, QSize* size, const QSiz
                     CGContextDrawImage(context, CGRectMake(0, 0, renderWidth, renderHeight), cgImage);
                     CGContextRelease(context);
 
-                    if (dpr > 1.0) {
-                        result.setDevicePixelRatio(dpr);
-                    }
-
                     QPainter painter(&result);
                     painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
                     painter.fillRect(result.rect(), Qt::white);
                     painter.end();
 
                     if (size) {
-                        *size = QSize(targetWidth, targetHeight);
+                        *size = QSize(renderWidth, renderHeight);
                     }
                     return result;
                 }
