@@ -132,7 +132,7 @@ CenteredGridView {
                     implicitWidth: 85
                     implicitHeight: 85
 
-                    icon.source: "qrc:/res/play_arrow_FILL1_wght700_GRAD200_opsz48.svg"
+                    icon.source: "image://sfsymbol/play.fill"
                     icon.width: 75
                     icon.height: 75
 
@@ -158,7 +158,7 @@ CenteredGridView {
                     implicitWidth: 85
                     implicitHeight: 85
 
-                    icon.source: "qrc:/res/stop_FILL1_wght700_GRAD200_opsz48.svg"
+                    icon.source: "image://sfsymbol/stop.fill"
                     icon.width: 75
                     icon.height: 75
 

@@ -154,6 +154,8 @@ public:
 
     void updatePointerRegionLock();
 
+    bool isFullscreenLikeWindow();
+
     static
     QString getUnmappedGamepads();
 
@@ -170,6 +172,7 @@ private:
         KeyComboTogglePointerRegionLock,
         KeyComboToggleCaptureSysKeys,
         KeyComboQuitAndExit,
+        KeyComboToggleAudioMute,
         KeyComboMax
     };
 
@@ -211,6 +214,7 @@ private:
     bool m_SwapMouseButtons;
     bool m_ReverseScrollDirection;
     bool m_SwapFaceButtons;
+    bool m_SwapWinAltKeys;
 
     bool m_MouseWasInVideoRegion;
     bool m_PendingMouseButtonsAllUpOnVideoRegionLeave;

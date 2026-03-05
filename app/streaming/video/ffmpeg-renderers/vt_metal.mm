@@ -9,6 +9,7 @@
 #include <Limelight.h>
 #include "streaming/session.h"
 #include "streaming/streamutils.h"
+#include "streaming/metalhudutils.h"
 #include "path.h"
 
 // Forward declaration for queue monitoring (used in fallback backpressure system)
@@ -21,8 +22,23 @@ extern "C" int LiGetPendingVideoFrames(void);
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 
+#if __has_include(<Metal/MTL4Compiler.h>) && __has_include(<Metal/MTL4LibraryDescriptor.h>) && __has_include(<Metal/MTL4RenderPipeline.h>)
+#define HAVE_MTL4_COMPILER 1
+#else
+#define HAVE_MTL4_COMPILER 0
+#endif
+
 extern "C" {
     #include <libavutil/pixdesc.h>
+}
+
+static const char* metalErrorString(NSError* error)
+{
+    if (error == nil || error.localizedDescription == nil) {
+        return "Unknown Metal error";
+    }
+
+    return error.localizedDescription.UTF8String;
 }
 
 // ParamBuffer matches the CscParams struct in the Metal shader (FP16 types)
@@ -58,6 +74,9 @@ class VTMetalRenderer;
 class VTMetalRenderer : public VTBaseRenderer
 {
 public:
+    static constexpr int k_PipelinePixelFormatCount = 2;
+    static constexpr int k_VideoPipelineVariantCount = 2;
+
     VTMetalRenderer(bool hwAccel)
         : VTBaseRenderer(RendererType::VTMetal),
           m_HwAccel(hwAccel),
@@ -79,6 +98,10 @@ public:
           m_VideoPipelineState(nullptr),
           m_OverlayPipelineState(nullptr),
           m_SolidPipelineState(nullptr),
+          m_CachedVideoPipelineStates{},
+          m_CachedOverlayPipelineStates{},
+          m_CachedSolidPipelineStates{},
+          m_ShaderCompiler(nullptr),
           m_ShaderLibrary(nullptr),
           m_CommandQueue(nullptr),
           m_NextDrawable(nullptr),
@@ -140,10 +163,6 @@ public:
             [m_OverlayBackgroundTexture release];
         }
 
-        if (m_VideoPipelineState != nullptr) {
-            [m_VideoPipelineState release];
-        }
-
         for (int i = 0; i < Overlay::OverlayMax; i++) {
             if (m_OverlayTextures[i] != nullptr) {
                 [m_OverlayTextures[i] release];
@@ -156,16 +175,28 @@ public:
             }
         }
 
-        if (m_OverlayPipelineState != nullptr) {
-            [m_OverlayPipelineState release];
-        }
+        for (int formatIndex = 0; formatIndex < k_PipelinePixelFormatCount; formatIndex++) {
+            for (int videoVariant = 0; videoVariant < k_VideoPipelineVariantCount; videoVariant++) {
+                if (m_CachedVideoPipelineStates[formatIndex][videoVariant] != nullptr) {
+                    [m_CachedVideoPipelineStates[formatIndex][videoVariant] release];
+                }
+            }
 
-        if (m_SolidPipelineState != nullptr) {
-            [m_SolidPipelineState release];
+            if (m_CachedOverlayPipelineStates[formatIndex] != nullptr) {
+                [m_CachedOverlayPipelineStates[formatIndex] release];
+            }
+
+            if (m_CachedSolidPipelineStates[formatIndex] != nullptr) {
+                [m_CachedSolidPipelineStates[formatIndex] release];
+            }
         }
 
         if (m_ShaderLibrary != nullptr) {
             [m_ShaderLibrary release];
+        }
+
+        if (m_ShaderCompiler != nullptr) {
+            [m_ShaderCompiler release];
         }
 
         if (m_CommandQueue != nullptr) {
@@ -353,6 +384,228 @@ public:
         }
     }
 
+    int getPipelineCacheFormatIndex(MTLPixelFormat pixelFormat) const
+    {
+        switch (pixelFormat) {
+        case MTLPixelFormatBGRA8Unorm:
+            return 0;
+        case MTLPixelFormatBGR10A2Unorm:
+            return 1;
+        default:
+            return -1;
+        }
+    }
+
+    const char* pixelFormatToString(MTLPixelFormat pixelFormat) const
+    {
+        switch (pixelFormat) {
+        case MTLPixelFormatBGRA8Unorm:
+            return "BGRA8Unorm";
+        case MTLPixelFormatBGR10A2Unorm:
+            return "BGR10A2Unorm";
+        default:
+            return "Unknown";
+        }
+    }
+
+    id<MTLRenderPipelineState> createRenderPipelineState(NSString* fragmentFunctionName,
+                                                         bool blendingEnabled,
+                                                         MTLPixelFormat pixelFormat)
+    {
+#if HAVE_MTL4_COMPILER
+        if (m_ShaderCompiler != nil) {
+            auto pipelineDesc = [[MTL4RenderPipelineDescriptor new] autorelease];
+
+            auto vertexFunctionDesc = [[MTL4LibraryFunctionDescriptor new] autorelease];
+            vertexFunctionDesc.library = m_ShaderLibrary;
+            vertexFunctionDesc.name = @"vs_draw";
+            pipelineDesc.vertexFunctionDescriptor = vertexFunctionDesc;
+
+            auto fragmentFunctionDesc = [[MTL4LibraryFunctionDescriptor new] autorelease];
+            fragmentFunctionDesc.library = m_ShaderLibrary;
+            fragmentFunctionDesc.name = fragmentFunctionName;
+            pipelineDesc.fragmentFunctionDescriptor = fragmentFunctionDesc;
+
+            MTL4RenderPipelineColorAttachmentDescriptor* colorAttachmentDesc = pipelineDesc.colorAttachments[0];
+            colorAttachmentDesc.pixelFormat = pixelFormat;
+            colorAttachmentDesc.blendingState = blendingEnabled ? MTL4BlendStateEnabled
+                                                                : MTL4BlendStateDisabled;
+
+            if (blendingEnabled) {
+                colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
+                colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
+                colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+                colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+                colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+                colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            }
+
+            NSError* error = nil;
+            auto pipelineState = [m_ShaderCompiler newRenderPipelineStateWithDescriptor:pipelineDesc
+                                                                      compilerTaskOptions:nil
+                                                                                    error:&error];
+            if (pipelineState == nil) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "Failed to create %s pipeline state via MTL4Compiler for pixel format %s: %s",
+                             fragmentFunctionName.UTF8String,
+                             pixelFormatToString(pixelFormat),
+                             metalErrorString(error));
+            }
+
+            return pipelineState;
+        }
+#endif
+
+        auto pipelineDesc = [[MTLRenderPipelineDescriptor new] autorelease];
+
+        pipelineDesc.vertexFunction = [[m_ShaderLibrary newFunctionWithName:@"vs_draw"] autorelease];
+        pipelineDesc.fragmentFunction = [[m_ShaderLibrary newFunctionWithName:fragmentFunctionName] autorelease];
+        pipelineDesc.colorAttachments[0].pixelFormat = pixelFormat;
+        pipelineDesc.colorAttachments[0].blendingEnabled = blendingEnabled;
+
+        if (blendingEnabled) {
+            pipelineDesc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+            pipelineDesc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+            pipelineDesc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+            pipelineDesc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+            pipelineDesc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            pipelineDesc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+        }
+
+        NSError* error = nil;
+        auto pipelineState = [m_MetalLayer.device newRenderPipelineStateWithDescriptor:pipelineDesc error:&error];
+        if (pipelineState == nil) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to create %s pipeline state for pixel format %s: %s",
+                         fragmentFunctionName.UTF8String,
+                         pixelFormatToString(pixelFormat),
+                         metalErrorString(error));
+        }
+
+        return pipelineState;
+    }
+
+    id<MTLRenderPipelineState> getCachedVideoPipelineState(MTLPixelFormat pixelFormat,
+                                                           int planes)
+    {
+        int formatIndex = getPipelineCacheFormatIndex(pixelFormat);
+        if (formatIndex < 0) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "No pipeline cache slot for pixel format: %lu",
+                         (unsigned long)pixelFormat);
+            return nil;
+        }
+
+        int variantIndex = (planes == 2) ? 0 : 1;
+        NSString* fragmentFunctionName = (planes == 2) ? @"ps_draw_biplanar" : @"ps_draw_triplanar";
+
+        if (m_CachedVideoPipelineStates[formatIndex][variantIndex] == nil) {
+            m_CachedVideoPipelineStates[formatIndex][variantIndex] =
+                createRenderPipelineState(fragmentFunctionName, false, pixelFormat);
+            if (m_CachedVideoPipelineStates[formatIndex][variantIndex] != nil) {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                            "Compiled %s video pipeline for %s (cache miss)",
+                            fragmentFunctionName.UTF8String,
+                            pixelFormatToString(pixelFormat));
+            }
+        }
+
+        return m_CachedVideoPipelineStates[formatIndex][variantIndex];
+    }
+
+    id<MTLRenderPipelineState> getCachedOverlayPipelineState(MTLPixelFormat pixelFormat)
+    {
+        int formatIndex = getPipelineCacheFormatIndex(pixelFormat);
+        if (formatIndex < 0) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "No pipeline cache slot for pixel format: %lu",
+                         (unsigned long)pixelFormat);
+            return nil;
+        }
+
+        if (m_CachedOverlayPipelineStates[formatIndex] == nil) {
+            m_CachedOverlayPipelineStates[formatIndex] =
+                createRenderPipelineState(@"ps_draw_overlay", true, pixelFormat);
+            if (m_CachedOverlayPipelineStates[formatIndex] != nil) {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                            "Compiled overlay pipeline for %s (cache miss)",
+                            pixelFormatToString(pixelFormat));
+            }
+        }
+
+        return m_CachedOverlayPipelineStates[formatIndex];
+    }
+
+    id<MTLRenderPipelineState> getCachedSolidPipelineState(MTLPixelFormat pixelFormat)
+    {
+        int formatIndex = getPipelineCacheFormatIndex(pixelFormat);
+        if (formatIndex < 0) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "No pipeline cache slot for pixel format: %lu",
+                         (unsigned long)pixelFormat);
+            return nil;
+        }
+
+        if (m_CachedSolidPipelineStates[formatIndex] == nil) {
+            m_CachedSolidPipelineStates[formatIndex] =
+                createRenderPipelineState(@"ps_draw_solid", true, pixelFormat);
+            if (m_CachedSolidPipelineStates[formatIndex] != nil) {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                            "Compiled solid pipeline for %s (cache miss)",
+                            pixelFormatToString(pixelFormat));
+            }
+        }
+
+        return m_CachedSolidPipelineStates[formatIndex];
+    }
+
+    bool setActivePipelineStatesForPixelFormat(MTLPixelFormat pixelFormat,
+                                               int planes)
+    {
+        m_VideoPipelineState = getCachedVideoPipelineState(pixelFormat, planes);
+        m_OverlayPipelineState = getCachedOverlayPipelineState(pixelFormat);
+        m_SolidPipelineState = getCachedSolidPipelineState(pixelFormat);
+        return m_VideoPipelineState != nil &&
+               m_OverlayPipelineState != nil &&
+               m_SolidPipelineState != nil;
+    }
+
+    bool prewarmPipelinesForPixelFormat(MTLPixelFormat pixelFormat)
+    {
+        Uint64 startTicks = SDL_GetPerformanceCounter();
+
+        auto biplanar = getCachedVideoPipelineState(pixelFormat, 2);
+        auto triplanar = getCachedVideoPipelineState(pixelFormat, 3);
+        auto overlay = getCachedOverlayPipelineState(pixelFormat);
+        auto solid = getCachedSolidPipelineState(pixelFormat);
+
+        Uint64 elapsedTicks = SDL_GetPerformanceCounter() - startTicks;
+        double elapsedMs = (elapsedTicks * 1000.0) / SDL_GetPerformanceFrequency();
+
+        if (biplanar == nil || triplanar == nil || overlay == nil || solid == nil) {
+            return false;
+        }
+
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "Prewarmed shader pipelines for %s in %.2f ms",
+                    pixelFormatToString(pixelFormat),
+                    elapsedMs);
+        return true;
+    }
+
+    bool prewarmPipelines(bool includeHdr)
+    {
+        if (!prewarmPipelinesForPixelFormat(MTLPixelFormatBGRA8Unorm)) {
+            return false;
+        }
+
+        if (includeHdr && !prewarmPipelinesForPixelFormat(MTLPixelFormatBGR10A2Unorm)) {
+            return false;
+        }
+
+        return true;
+    }
+
     bool updateColorSpaceForFrame(AVFrame* frame)
     {
         int colorspace = getFrameColorspace(frame);
@@ -447,53 +700,7 @@ public:
             int planes = getFramePlaneCount(frame);
             SDL_assert(planes == 2 || planes == 3);
 
-            MTLRenderPipelineDescriptor *pipelineDesc = [[MTLRenderPipelineDescriptor new] autorelease];
-            pipelineDesc.vertexFunction = [[m_ShaderLibrary newFunctionWithName:@"vs_draw"] autorelease];
-            pipelineDesc.fragmentFunction = [[m_ShaderLibrary newFunctionWithName:planes == 2 ? @"ps_draw_biplanar" : @"ps_draw_triplanar"] autorelease];
-            pipelineDesc.colorAttachments[0].pixelFormat = m_MetalLayer.pixelFormat;
-            [m_VideoPipelineState release];
-            m_VideoPipelineState = [m_MetalLayer.device newRenderPipelineStateWithDescriptor:pipelineDesc error:nullptr];
-            if (!m_VideoPipelineState) {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                             "Failed to create video pipeline state");
-                return false;
-            }
-
-            pipelineDesc = [[MTLRenderPipelineDescriptor new] autorelease];
-            pipelineDesc.vertexFunction = [[m_ShaderLibrary newFunctionWithName:@"vs_draw"] autorelease];
-            pipelineDesc.fragmentFunction = [[m_ShaderLibrary newFunctionWithName:@"ps_draw_overlay"] autorelease];
-            pipelineDesc.colorAttachments[0].pixelFormat = m_MetalLayer.pixelFormat;
-            pipelineDesc.colorAttachments[0].blendingEnabled = YES;
-            pipelineDesc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-            pipelineDesc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-            pipelineDesc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-            pipelineDesc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-            pipelineDesc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-            pipelineDesc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-            [m_OverlayPipelineState release];
-            m_OverlayPipelineState = [m_MetalLayer.device newRenderPipelineStateWithDescriptor:pipelineDesc error:nullptr];
-            if (!m_OverlayPipelineState) {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                             "Failed to create overlay pipeline state");
-                return false;
-            }
-
-            pipelineDesc = [[MTLRenderPipelineDescriptor new] autorelease];
-            pipelineDesc.vertexFunction = [[m_ShaderLibrary newFunctionWithName:@"vs_draw"] autorelease];
-            pipelineDesc.fragmentFunction = [[m_ShaderLibrary newFunctionWithName:@"ps_draw_solid"] autorelease];
-            pipelineDesc.colorAttachments[0].pixelFormat = m_MetalLayer.pixelFormat;
-            pipelineDesc.colorAttachments[0].blendingEnabled = YES;
-            pipelineDesc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-            pipelineDesc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-            pipelineDesc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-            pipelineDesc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-            pipelineDesc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-            pipelineDesc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-            [m_SolidPipelineState release];
-            m_SolidPipelineState = [m_MetalLayer.device newRenderPipelineStateWithDescriptor:pipelineDesc error:nullptr];
-            if (!m_SolidPipelineState) {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                             "Failed to create solid pipeline state");
+            if (!setActivePipelineStatesForPixelFormat(m_MetalLayer.pixelFormat, planes)) {
                 return false;
             }
 
@@ -1000,6 +1207,10 @@ public:
 
         m_MetalLayer = (CAMetalLayer*)SDL_Metal_GetLayer(m_MetalView);
 
+        MetalHudUtils::setMetalLayerHudMode(m_MetalLayer,
+                                            params->testOnly ? MetalHudUtils::LayerMode::Disabled
+                                                             : MetalHudUtils::LayerMode::Main);
+
         // Choose a device
         m_MetalLayer.device = device;
 
@@ -1034,10 +1245,59 @@ public:
 
         // Compile our shaders
         QString shaderSource = QString::fromUtf8(Path::readDataFile("vt_renderer.metal"));
-        m_ShaderLibrary = [m_MetalLayer.device newLibraryWithSource:shaderSource.toNSString() options:nullptr error:nullptr];
-        if (!m_ShaderLibrary) {
+        if (shaderSource.isEmpty()) {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                         "Failed to compile shaders");
+                         "Failed to load shader source: vt_renderer.metal");
+            return false;
+        }
+
+        NSError* error = nil;
+
+#if HAVE_MTL4_COMPILER
+        if ([m_MetalLayer.device respondsToSelector:@selector(newCompilerWithDescriptor:error:)]) {
+            auto compilerDesc = [[MTL4CompilerDescriptor new] autorelease];
+            compilerDesc.label = @"Maclight VT shader compiler";
+
+            m_ShaderCompiler = [m_MetalLayer.device newCompilerWithDescriptor:compilerDesc error:&error];
+            if (m_ShaderCompiler != nil) {
+                auto libraryDesc = [[MTL4LibraryDescriptor new] autorelease];
+                libraryDesc.name = @"vt_renderer";
+                libraryDesc.source = shaderSource.toNSString();
+
+                error = nil;
+                m_ShaderLibrary = [m_ShaderCompiler newLibraryWithDescriptor:libraryDesc error:&error];
+                if (m_ShaderLibrary != nil) {
+                    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                                "Using MTL4 shader compiler for VT renderer pipelines");
+                }
+                else {
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                                "MTL4 shader library compilation failed; falling back to legacy Metal compiler: %s",
+                                metalErrorString(error));
+                }
+            }
+            else {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                            "MTL4 compiler creation failed; falling back to legacy Metal compiler: %s",
+                            metalErrorString(error));
+            }
+        }
+#endif
+
+        if (m_ShaderLibrary == nil) {
+            error = nil;
+            m_ShaderLibrary = [m_MetalLayer.device newLibraryWithSource:shaderSource.toNSString() options:nil error:&error];
+            if (!m_ShaderLibrary) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "Failed to compile shaders: %s",
+                             metalErrorString(error));
+                return false;
+            }
+        }
+
+        if (!prewarmPipelines(!!(params->videoFormat & VIDEO_FORMAT_MASK_10BIT))) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to prewarm shader pipelines");
             return false;
         }
 
@@ -1337,6 +1597,14 @@ private:
     id<MTLRenderPipelineState> m_VideoPipelineState;
     id<MTLRenderPipelineState> m_OverlayPipelineState;
     id<MTLRenderPipelineState> m_SolidPipelineState;
+    id<MTLRenderPipelineState> m_CachedVideoPipelineStates[k_PipelinePixelFormatCount][k_VideoPipelineVariantCount];
+    id<MTLRenderPipelineState> m_CachedOverlayPipelineStates[k_PipelinePixelFormatCount];
+    id<MTLRenderPipelineState> m_CachedSolidPipelineStates[k_PipelinePixelFormatCount];
+#if HAVE_MTL4_COMPILER
+    id<MTL4Compiler> m_ShaderCompiler;
+#else
+    id m_ShaderCompiler;
+#endif
     id<MTLLibrary> m_ShaderLibrary;
     id<MTLCommandQueue> m_CommandQueue;
 

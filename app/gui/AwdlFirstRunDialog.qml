@@ -19,7 +19,7 @@ NavigableDialog {
 
         Image {
             id: dialogImage
-            source: "qrc:/res/baseline-help_outline-24px.svg"
+            source: "image://sfsymbol/questionmark.circle"
             sourceSize {
                 width: 50
                 height: 50
@@ -41,7 +41,7 @@ NavigableDialog {
                 text: qsTr("Would you like to enable AWDL (Apple Wireless Direct Link) management?\n\n" +
                           "AWDL is used by AirDrop and other Apple services, but can interfere with " +
                           "streaming performance on some networks.\n\n" +
-                          "If enabled, Moonlight will temporarily disable AWDL during streaming sessions " +
+                          "If enabled, Maclight will temporarily disable AWDL during streaming sessions " +
                           "to improve network stability. This requires administrator privileges.")
                 wrapMode: Text.Wrap
                 Layout.maximumWidth: 400
@@ -64,6 +64,10 @@ NavigableDialog {
                 id: yesButton
                 text: qsTr("Yes")
                 flat: true
+                background: Rectangle {
+                    radius: 3
+                    color: yesButton.down ? "#505050" : (yesButton.hovered ? "#484848" : "transparent")
+                }
 
                 Keys.onReturnPressed: clicked()
                 Keys.onEnterPressed: clicked()
@@ -71,11 +75,9 @@ NavigableDialog {
                 Keys.onLeftPressed: noButton.forceActiveFocus(Qt.TabFocus)
 
                 onClicked: {
-                    // Enable AWDL and don't show dialog again
                     StreamingPreferences.awdlEnabled = true
                     StreamingPreferences.awdlFirstRunShown = true
                     StreamingPreferences.save()
-                    // Request authorization which will prompt for password
                     StreamingPreferences.requestAwdlAuthorization()
                     dialog.close()
                 }
@@ -85,6 +87,10 @@ NavigableDialog {
                 id: noButton
                 text: qsTr("No")
                 flat: true
+                background: Rectangle {
+                    radius: 3
+                    color: noButton.down ? "#505050" : (noButton.hovered ? "#484848" : "transparent")
+                }
 
                 Keys.onReturnPressed: clicked()
                 Keys.onEnterPressed: clicked()
@@ -92,7 +98,6 @@ NavigableDialog {
                 Keys.onLeftPressed: yesButton.forceActiveFocus(Qt.TabFocus)
 
                 onClicked: {
-                    // Disable AWDL permanently
                     StreamingPreferences.awdlEnabled = false
                     StreamingPreferences.awdlFirstRunShown = true
                     StreamingPreferences.save()

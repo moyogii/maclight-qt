@@ -307,15 +307,10 @@ Flickable {
 
                         NavigableDialog {
                             id: customResolutionDialog
-                            standardButtons: Dialog.Ok | Dialog.Cancel
+                            standardButtons: Dialog.NoButton
                             onOpened: {
                                 // Force keyboard focus on the textbox so keyboard navigation works
                                 widthField.forceActiveFocus()
-
-                                // standardButton() was added in Qt 5.10, so we must check for it first
-                                if (customResolutionDialog.standardButton) {
-                                    customResolutionDialog.standardButton(Dialog.Ok).enabled = customResolutionDialog.isInputValid()
-                                }
                             }
 
                             onClosed: {
@@ -372,6 +367,11 @@ Flickable {
                                 }
                             }
 
+                            footer: DialogOkCancelButtonBox {
+                                targetDialog: customResolutionDialog
+                                validationCallback: customResolutionDialog.isInputValid
+                            }
+
                             ColumnLayout {
                                 Label {
                                     text: qsTr("Custom resolutions are not officially supported by GeForce Experience, so it will not set your host display resolution. You will need to set it manually while in game.") + "\n\n" +
@@ -394,13 +394,6 @@ Flickable {
                                         validator: IntValidator{bottom:256; top:8192}
                                         focus: true
 
-                                        onTextChanged: {
-                                            // standardButton() was added in Qt 5.10, so we must check for it first
-                                            if (customResolutionDialog.standardButton) {
-                                                customResolutionDialog.standardButton(Dialog.Ok).enabled = customResolutionDialog.isInputValid()
-                                            }
-                                        }
-
                                         Keys.onReturnPressed: {
                                             customResolutionDialog.accept()
                                         }
@@ -421,13 +414,6 @@ Flickable {
                                         inputMethodHints: Qt.ImhDigitsOnly
                                         placeholderText: resolutionListModel.get(resolutionComboBox.currentIndex).video_height
                                         validator: IntValidator{bottom:256; top:8192}
-
-                                        onTextChanged: {
-                                            // standardButton() was added in Qt 5.10, so we must check for it first
-                                            if (customResolutionDialog.standardButton) {
-                                                customResolutionDialog.standardButton(Dialog.Ok).enabled = customResolutionDialog.isInputValid()
-                                            }
-                                        }
 
                                         Keys.onReturnPressed: {
                                             customResolutionDialog.accept()
@@ -479,15 +465,10 @@ Flickable {
                             }
 
                             id: customFpsDialog
-                            standardButtons: Dialog.Ok | Dialog.Cancel
+                            standardButtons: Dialog.NoButton
                             onOpened: {
                                 // Force keyboard focus on the textbox so keyboard navigation works
                                 fpsField.forceActiveFocus()
-
-                                // standardButton() was added in Qt 5.10, so we must check for it first
-                                if (customFpsDialog.standardButton) {
-                                    customFpsDialog.standardButton(Dialog.Ok).enabled = customFpsDialog.isInputValid()
-                                }
                             }
 
                             onClosed: {
@@ -524,6 +505,11 @@ Flickable {
                                 }
                             }
 
+                            footer: DialogOkCancelButtonBox {
+                                targetDialog: customFpsDialog
+                                validationCallback: customFpsDialog.isInputValid
+                            }
+
                             ColumnLayout {
                                 Label {
                                     text: qsTr("Enter a custom frame rate:")
@@ -538,13 +524,6 @@ Flickable {
                                         placeholderText: fpsListModel.get(fpsComboBox.currentIndex).video_fps
                                         validator: IntValidator{bottom:10; top:9999}
                                         focus: true
-
-                                        onTextChanged: {
-                                            // standardButton() was added in Qt 5.10, so we must check for it first
-                                            if (customFpsDialog.standardButton) {
-                                                customFpsDialog.standardButton(Dialog.Ok).enabled = customFpsDialog.isInputValid()
-                                            }
-                                        }
 
                                         Keys.onReturnPressed: {
                                             customFpsDialog.accept()
@@ -719,6 +698,10 @@ Flickable {
                         id: resetBitrateButton
                         text: qsTr("Use Default (%1 Mbps)").arg(StreamingPreferences.getDefaultBitrate(StreamingPreferences.width, StreamingPreferences.height, StreamingPreferences.fps, StreamingPreferences.enableYUV444) / 1000.0)
                         visible: StreamingPreferences.bitrateKbps !== StreamingPreferences.getDefaultBitrate(StreamingPreferences.width, StreamingPreferences.height, StreamingPreferences.fps, StreamingPreferences.enableYUV444)
+                        background: Rectangle {
+                            radius: 3
+                            color: resetBitrateButton.down ? "#505050" : (resetBitrateButton.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             var defaultBitrate = StreamingPreferences.getDefaultBitrate(StreamingPreferences.width, StreamingPreferences.height, StreamingPreferences.fps, StreamingPreferences.enableYUV444)
                             StreamingPreferences.bitrateKbps = defaultBitrate
@@ -847,6 +830,24 @@ Flickable {
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Frame pacing reduces micro-stutter by delaying frames that come in too early")
                 }
+
+                CheckBox {
+                    id: displayMenuBarInBorderlessFullscreenCheck
+                    width: parent.width
+                    hoverEnabled: true
+                    visible: Qt.platform.os === "osx" && SystemProperties.hasDesktopEnvironment && StreamingPreferences.windowMode === StreamingPreferences.WM_FULLSCREEN_DESKTOP
+                    text: qsTr("Display menu bar in borderless fullscreen")
+                    font.pointSize: 12
+                    checked: StreamingPreferences.displayMenuBarInBorderlessFullscreen
+                    onCheckedChanged: {
+                        StreamingPreferences.displayMenuBarInBorderlessFullscreen = checked
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Uses a borderless window below the macOS menu bar instead of a fullscreen Space. This sends a custom resolution to the host which may not be officially supported and could cause streaming errors.")
+                }
             }
         }
 
@@ -928,7 +929,7 @@ Flickable {
                 CheckBox {
                     id: muteOnFocusLossCheck
                     width: parent.width
-                    text: qsTr("Mute audio stream when Moonlight is not the active window")
+                    text: qsTr("Mute audio stream when Maclight is not the active window")
                     font.pointSize: 12
                     visible: SystemProperties.hasDesktopEnvironment
                     checked: StreamingPreferences.muteOnFocusLoss
@@ -939,7 +940,7 @@ Flickable {
                     ToolTip.delay: 1000
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Mutes Moonlight's audio when you Alt+Tab out of the stream or click on a different window.")
+                    ToolTip.text: qsTr("Mutes Maclight's audio when you Alt+Tab out of the stream or click on a different window.")
                 }
             }
         }
@@ -995,7 +996,7 @@ Flickable {
                     ToolTip.delay: 1000
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Automatically sync your clipboard between the host and client when the streaming window changes focus. (Requires Apollo)")
+                    ToolTip.text: qsTr("Automatically sync your clipboard between the host and client when the streaming window changes focus. (Requires Apollo/Vibepollo)")
                 }
             }
         }
@@ -1175,7 +1176,7 @@ Flickable {
                         if (StreamingPreferences.language !== new_language) {
                             StreamingPreferences.language = languageListModel.get(currentIndex).val
                             if (!StreamingPreferences.retranslate()) {
-                                ToolTip.show(qsTr("You must restart Moonlight for this change to take effect"), 5000)
+                                ToolTip.show(qsTr("You must restart Maclight for this change to take effect"), 5000)
                             }
                             else {
                                 // Force the back operation to pop any AppView pages that exist.
@@ -1266,23 +1267,6 @@ Flickable {
                 }
 
                 CheckBox {
-                    visible: SystemProperties.hasDiscordIntegration
-                    id: discordPresenceCheck
-                    width: parent.width
-                    text: qsTr("Discord Rich Presence integration")
-                    font.pointSize: 12
-                    checked: StreamingPreferences.richPresence
-                    onCheckedChanged: {
-                        StreamingPreferences.richPresence = checked
-                    }
-
-                    ToolTip.delay: 1000
-                    ToolTip.timeout: 5000
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Updates your Discord status to display the name of the game you're streaming.")
-                }
-
-                CheckBox {
                     id: keepAwakeCheck
                     width: parent.width
                     text: qsTr("Keep the display awake while streaming")
@@ -1357,7 +1341,7 @@ Flickable {
                         ToolTip.timeout: 10000
                         ToolTip.visible: hovered
                         ToolTip.text: qsTr("This enables the capture of system-wide keyboard shortcuts like Alt+Tab that would normally be handled by the client OS while streaming.") + "\n\n" +
-                                      qsTr("NOTE: Certain keyboard shortcuts like Ctrl+Alt+Del on Windows cannot be intercepted by any application, including Moonlight.")
+                                      qsTr("NOTE: Certain keyboard shortcuts like Ctrl+Alt+Del on Windows cannot be intercepted by any application, including Maclight.")
                     }
 
                     AutoResizingComboBox {
@@ -1437,7 +1421,7 @@ Flickable {
                     id: swapMouseButtonsCheck
                     hoverEnabled: true
                     width: parent.width
-                    text: qsTr("Swap left and right mouse buttons")
+                    text: qsTr("Swap left & right mouse buttons")
                     font.pointSize:  12
                     checked: StreamingPreferences.swapMouseButtons
                     onCheckedChanged: {
@@ -1455,6 +1439,24 @@ Flickable {
                     onCheckedChanged: {
                         StreamingPreferences.reverseScrollDirection = checked
                     }
+                }
+
+                CheckBox {
+                    id: swapWinAltKeysCheck
+                    hoverEnabled: true
+                    width: parent.width
+                    text: qsTr("Swap Win & Alt keys")
+                    font.pointSize: 12
+                    checked: StreamingPreferences.swapWinAltKeys
+                    onCheckedChanged: {
+                        StreamingPreferences.swapWinAltKeys = checked
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 10000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("When enabled, pressing Alt sends Windows key and pressing Windows key sends Alt to the host.") + " " +
+                                  qsTr("This is particularly useful when connecting to a Windows client from a Mac.")
                 }
             }
         }
@@ -1518,7 +1520,7 @@ Flickable {
                 CheckBox {
                     id: backgroundGamepadCheck
                     width: parent.width
-                    text: qsTr("Process gamepad input when Moonlight is in the background")
+                    text: qsTr("Process gamepad input when Maclight is in the background")
                     font.pointSize: 12
                     visible: SystemProperties.hasDesktopEnvironment
                     checked: StreamingPreferences.backgroundGamepad
@@ -1529,7 +1531,7 @@ Flickable {
                     ToolTip.delay: 1000
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Allows Moonlight to capture gamepad inputs even if it's not the current window in focus")
+                    ToolTip.text: qsTr("Allows Maclight to capture gamepad inputs even if it's not the current window in focus")
                 }
             }
         }
@@ -1781,6 +1783,10 @@ Flickable {
                     hoverEnabled: true
                     visible: Qt.platform.os === "osx"
                     enabled: StreamingPreferences.awdlFirstRunShown
+                    background: Rectangle {
+                        radius: 3
+                        color: resetAwdlChoiceButton.enabled ? (resetAwdlChoiceButton.down ? "#505050" : (resetAwdlChoiceButton.hovered ? "#484848" : "#424242")) : "#333333"
+                    }
 
                     onClicked: {
                         StreamingPreferences.awdlFirstRunShown = false
@@ -1792,6 +1798,80 @@ Flickable {
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Resets your AWDL management choice. The AWDL prompt will appear again on next launch.")
+                }
+
+                Item {
+                    width: parent.width
+                    height: 14
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
+                }
+
+                Label {
+                    width: parent.width
+                    text: qsTr("Metal Debug Settings")
+                    font.pointSize: 12
+                    wrapMode: Text.Wrap
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
+                }
+
+                CheckBox {
+                    id: metalPerformanceHudCheck
+                    width: parent.width
+                    text: qsTr("Enable Metal performance HUD")
+                    font.pointSize: 12
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
+                    checked: StreamingPreferences.metalPerformanceHudEnabled
+
+                    onCheckedChanged: {
+                        if (StreamingPreferences.metalPerformanceHudEnabled !== checked) {
+                            StreamingPreferences.metalPerformanceHudEnabled = checked
+                        }
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Displays Metal performance statistics overlay. Requires app restart.")
+                }
+
+                CheckBox {
+                    id: metalDebugLayerCheck
+                    width: parent.width
+                    text: qsTr("Enable Metal debug layer (MTL_DEBUG_LAYER)")
+                    font.pointSize: 12
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
+                    checked: StreamingPreferences.metalDebugLayerEnabled
+
+                    onCheckedChanged: {
+                        if (StreamingPreferences.metalDebugLayerEnabled !== checked) {
+                            StreamingPreferences.metalDebugLayerEnabled = checked
+                        }
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Adds API validation checks for Metal. This can heavily impact performance while streaming and requires app restart.")
+                }
+
+                CheckBox {
+                    id: metalShaderValidationCheck
+                    width: parent.width
+                    text: qsTr("Enable Metal shader validation (MTL_SHADER_VALIDATION)")
+                    font.pointSize: 12
+                    visible: Qt.platform.os === "osx" && StreamingPreferences.debugModeEnabled
+                    checked: StreamingPreferences.metalShaderValidationEnabled
+
+                    onCheckedChanged: {
+                        if (StreamingPreferences.metalShaderValidationEnabled !== checked) {
+                            StreamingPreferences.metalShaderValidationEnabled = checked
+                        }
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Enables extra GPU shader/runtime validation checks. This has very high overhead and requires app restart.")
                 }
 
 
@@ -1838,7 +1918,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeToggleStatsBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeToggleStatsBtn.down ? "#505050" : (changeToggleStatsBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             toggleStatsHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleStatsModifiers
                             toggleStatsHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleStatsScanCode
@@ -1869,7 +1954,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeToggleMouseModeBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeToggleMouseModeBtn.down ? "#505050" : (changeToggleMouseModeBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             toggleMouseModeHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleMouseModeModifiers
                             toggleMouseModeHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleMouseModeScanCode
@@ -1900,7 +1990,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeCaptureSysKeysBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeCaptureSysKeysBtn.down ? "#505050" : (changeCaptureSysKeysBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             toggleCaptureSysKeysHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers
                             toggleCaptureSysKeysHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode
@@ -1931,7 +2026,12 @@ Flickable {
                     }
 
                     Button {
+                        id: changeExitStreamBtn
                         text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeExitStreamBtn.down ? "#505050" : (changeExitStreamBtn.hovered ? "#484848" : "#424242")
+                        }
                         onClicked: {
                             exitStreamHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyExitStreamModifiers
                             exitStreamHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyExitStreamScanCode
@@ -1941,18 +2041,60 @@ Flickable {
                     }
                 }
 
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Label {
+                        text: qsTr("Toggle Stream Audio:")
+                        font.pointSize: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Label {
+                        id: toggleAudioMuteHotkeyDisplay
+                        text: StreamingPreferences.hotkeyToString(StreamingPreferences.hotkeyToggleAudioMuteModifiers,
+                                                                   StreamingPreferences.hotkeyToggleAudioMuteScanCode)
+                        font.pointSize: 12
+                        font.bold: true
+                        color: Material.accent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Button {
+                        id: changeToggleAudioMuteBtn
+                        text: qsTr("Change")
+                        background: Rectangle {
+                            radius: 3
+                            color: changeToggleAudioMuteBtn.down ? "#505050" : (changeToggleAudioMuteBtn.hovered ? "#484848" : "#424242")
+                        }
+                        onClicked: {
+                            toggleAudioMuteHotkeyCaptureDialog.initialModifiers = StreamingPreferences.hotkeyToggleAudioMuteModifiers
+                            toggleAudioMuteHotkeyCaptureDialog.initialScanCode = StreamingPreferences.hotkeyToggleAudioMuteScanCode
+                            toggleAudioMuteHotkeyCaptureDialog.open()
+                        }
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
                 Button {
+                    id: resetHotkeysBtn
                     text: qsTr("Reset Hotkeys to Defaults")
+                    background: Rectangle {
+                        radius: 3
+                        color: resetHotkeysBtn.down ? "#505050" : (resetHotkeysBtn.hovered ? "#484848" : "#424242")
+                    }
                     onClicked: {
-                        // Ctrl+Alt+Shift = 0x3C3 = 963
                         StreamingPreferences.hotkeyToggleStatsModifiers = 0x3C3
-                        StreamingPreferences.hotkeyToggleStatsScanCode = 22  // SDL_SCANCODE_S
+                        StreamingPreferences.hotkeyToggleStatsScanCode = 22
                         StreamingPreferences.hotkeyToggleMouseModeModifiers = 0x3C3
-                        StreamingPreferences.hotkeyToggleMouseModeScanCode = 16  // SDL_SCANCODE_M
+                        StreamingPreferences.hotkeyToggleMouseModeScanCode = 16
                         StreamingPreferences.hotkeyToggleCaptureSysKeysModifiers = 0x3C3
-                        StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode = 14  // SDL_SCANCODE_K
+                        StreamingPreferences.hotkeyToggleCaptureSysKeysScanCode = 14
                         StreamingPreferences.hotkeyExitStreamModifiers = 0x3C3
-                        StreamingPreferences.hotkeyExitStreamScanCode = 8    // SDL_SCANCODE_E
+                        StreamingPreferences.hotkeyExitStreamScanCode = 8
+                        StreamingPreferences.hotkeyToggleAudioMuteModifiers = 0x3C3
+                        StreamingPreferences.hotkeyToggleAudioMuteScanCode = 4
                     }
                 }
             }

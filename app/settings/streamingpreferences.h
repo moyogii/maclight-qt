@@ -127,7 +127,6 @@ public:
     Q_PROPERTY(bool framePacing MEMBER framePacing NOTIFY framePacingChanged)
     Q_PROPERTY(bool connectionWarnings MEMBER connectionWarnings NOTIFY connectionWarningsChanged)
     Q_PROPERTY(bool configurationWarnings MEMBER configurationWarnings NOTIFY configurationWarningsChanged)
-    Q_PROPERTY(bool richPresence MEMBER richPresence NOTIFY richPresenceChanged)
     Q_PROPERTY(bool gamepadMouse MEMBER gamepadMouse NOTIFY gamepadMouseChanged)
     Q_PROPERTY(bool detectNetworkBlocking MEMBER detectNetworkBlocking NOTIFY detectNetworkBlockingChanged)
     Q_PROPERTY(bool showPerformanceOverlay MEMBER showPerformanceOverlay NOTIFY showPerformanceOverlayChanged)
@@ -137,6 +136,7 @@ public:
     Q_PROPERTY(bool enableYUV444 MEMBER enableYUV444 NOTIFY enableYUV444Changed)
     Q_PROPERTY(VideoDecoderSelection videoDecoderSelection MEMBER videoDecoderSelection NOTIFY videoDecoderSelectionChanged)
     Q_PROPERTY(WindowMode windowMode MEMBER windowMode NOTIFY windowModeChanged)
+    Q_PROPERTY(bool displayMenuBarInBorderlessFullscreen MEMBER displayMenuBarInBorderlessFullscreen NOTIFY displayMenuBarInBorderlessFullscreenChanged)
     Q_PROPERTY(WindowMode recommendedFullScreenMode MEMBER recommendedFullScreenMode CONSTANT)
     Q_PROPERTY(UIDisplayMode uiDisplayMode MEMBER uiDisplayMode NOTIFY uiDisplayModeChanged)
     Q_PROPERTY(bool swapMouseButtons MEMBER swapMouseButtons NOTIFY mouseButtonsChanged)
@@ -146,10 +146,15 @@ public:
     Q_PROPERTY(bool swapFaceButtons MEMBER swapFaceButtons NOTIFY swapFaceButtonsChanged)
     Q_PROPERTY(bool keepAwake MEMBER keepAwake NOTIFY keepAwakeChanged)
     Q_PROPERTY(CaptureSysKeysMode captureSysKeysMode MEMBER captureSysKeysMode NOTIFY captureSysKeysModeChanged)
+    Q_PROPERTY(bool swapWinAltKeys MEMBER swapWinAltKeys NOTIFY swapWinAltKeysChanged)
     Q_PROPERTY(Language language MEMBER language NOTIFY languageChanged)
     Q_PROPERTY(bool enableClipboardSync MEMBER enableClipboardSync NOTIFY enableClipboardSyncChanged)
     Q_PROPERTY(bool awdlEnabled MEMBER awdlEnabled NOTIFY awdlEnabledChanged)
     Q_PROPERTY(bool awdlFirstRunShown MEMBER awdlFirstRunShown NOTIFY awdlFirstRunShownChanged)
+    Q_PROPERTY(bool metalDebugLayerEnabled MEMBER metalDebugLayerEnabled NOTIFY metalDebugLayerEnabledChanged)
+    Q_PROPERTY(bool metalShaderValidationEnabled MEMBER metalShaderValidationEnabled NOTIFY metalShaderValidationEnabledChanged)
+    Q_PROPERTY(bool metalPerformanceHudEnabled MEMBER metalPerformanceHudEnabled NOTIFY metalPerformanceHudEnabledChanged)
+    Q_PROPERTY(bool debugModeEnabled MEMBER debugModeEnabled NOTIFY debugModeEnabledChanged)
     Q_PROPERTY(int hotkeyToggleStatsModifiers MEMBER hotkeyToggleStatsModifiers NOTIFY hotkeyToggleStatsChanged)
     Q_PROPERTY(int hotkeyToggleStatsScanCode MEMBER hotkeyToggleStatsScanCode NOTIFY hotkeyToggleStatsChanged)
     Q_PROPERTY(int hotkeyToggleMouseModeModifiers MEMBER hotkeyToggleMouseModeModifiers NOTIFY hotkeyToggleMouseModeChanged)
@@ -158,6 +163,8 @@ public:
     Q_PROPERTY(int hotkeyExitStreamScanCode MEMBER hotkeyExitStreamScanCode NOTIFY hotkeyExitStreamChanged)
     Q_PROPERTY(int hotkeyToggleCaptureSysKeysModifiers MEMBER hotkeyToggleCaptureSysKeysModifiers NOTIFY hotkeyToggleCaptureSysKeysChanged)
     Q_PROPERTY(int hotkeyToggleCaptureSysKeysScanCode MEMBER hotkeyToggleCaptureSysKeysScanCode NOTIFY hotkeyToggleCaptureSysKeysChanged)
+    Q_PROPERTY(int hotkeyToggleAudioMuteModifiers MEMBER hotkeyToggleAudioMuteModifiers NOTIFY hotkeyToggleAudioMuteChanged)
+    Q_PROPERTY(int hotkeyToggleAudioMuteScanCode MEMBER hotkeyToggleAudioMuteScanCode NOTIFY hotkeyToggleAudioMuteChanged)
     Q_INVOKABLE bool retranslate();
     Q_INVOKABLE static QString hotkeyToString(int modifiers, int scanCode);
     
@@ -191,7 +198,6 @@ public:
     bool framePacing;
     bool connectionWarnings;
     bool configurationWarnings;
-    bool richPresence;
     bool gamepadMouse;
     bool detectNetworkBlocking;
     bool showPerformanceOverlay;
@@ -202,8 +208,14 @@ public:
     bool swapFaceButtons;
     bool keepAwake;
     bool enableClipboardSync;
+    bool displayMenuBarInBorderlessFullscreen;
+    bool swapWinAltKeys;
     bool awdlEnabled;
     bool awdlFirstRunShown;
+    bool metalDebugLayerEnabled;
+    bool metalShaderValidationEnabled;
+    bool metalPerformanceHudEnabled;
+    bool debugModeEnabled;
     int hotkeyToggleStatsModifiers;
     int hotkeyToggleStatsScanCode;
     int hotkeyToggleMouseModeModifiers;
@@ -212,6 +224,8 @@ public:
     int hotkeyExitStreamScanCode;
     int hotkeyToggleCaptureSysKeysModifiers;
     int hotkeyToggleCaptureSysKeysScanCode;
+    int hotkeyToggleAudioMuteModifiers;
+    int hotkeyToggleAudioMuteScanCode;
     int packetSize;
     AudioConfig audioConfig;
     VideoCodecConfig videoCodecConfig;
@@ -245,10 +259,10 @@ signals:
     void videoDecoderSelectionChanged();
     void uiDisplayModeChanged();
     void windowModeChanged();
+    void displayMenuBarInBorderlessFullscreenChanged();
     void framePacingChanged();
     void connectionWarningsChanged();
     void configurationWarningsChanged();
-    void richPresenceChanged();
     void gamepadMouseChanged();
     void detectNetworkBlockingChanged();
     void showPerformanceOverlayChanged();
@@ -258,16 +272,22 @@ signals:
     void reverseScrollDirectionChanged();
     void swapFaceButtonsChanged();
     void captureSysKeysModeChanged();
+    void swapWinAltKeysChanged();
     void keepAwakeChanged();
     void languageChanged();
     void enableClipboardSyncChanged();
     void awdlEnabledChanged();
     void awdlFirstRunShownChanged();
+    void metalDebugLayerEnabledChanged();
+    void metalShaderValidationEnabledChanged();
+    void metalPerformanceHudEnabledChanged();
+    void debugModeEnabledChanged();
 
     void hotkeyToggleStatsChanged();
     void hotkeyToggleMouseModeChanged();
     void hotkeyExitStreamChanged();
     void hotkeyToggleCaptureSysKeysChanged();
+    void hotkeyToggleAudioMuteChanged();
 
     void awdlAuthorizationChanged(bool hasAuth);
     void awdlError(const QString &error);

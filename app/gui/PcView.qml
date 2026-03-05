@@ -17,7 +17,7 @@ CenteredGridView {
     activeFocusOnTab: true
     topMargin: 20
     bottomMargin: 5
-    cellWidth: 310; cellHeight: 330;
+    cellWidth: 260; cellHeight: 250;
     objectName: qsTr("Computers")
 
     Component.onCompleted: {
@@ -63,7 +63,7 @@ CenteredGridView {
             errorDialog.text = qsTr("Unable to connect to the specified PC.")
 
             if (detectedPortBlocking) {
-                errorDialog.text += "\n\n" + qsTr("This PC's Internet connection is blocking Moonlight. Streaming over the Internet may not work while connected to this network.")
+                errorDialog.text += "\n\n" + qsTr("This PC's Internet connection is blocking Maclight. Streaming over the Internet may not work while connected to this network.")
             }
             else {
                 errorDialog.helpText = qsTr("Click the Help button for possible solutions.")
@@ -107,7 +107,7 @@ CenteredGridView {
     model: computerModel
 
     delegate: NavigableItemDelegate {
-        width: 300; height: 320;
+        width: 250; height: 240;
         grid: pcGrid
 
         property alias pcContextMenu : pcContextMenuLoader.item
@@ -115,24 +115,36 @@ CenteredGridView {
         Image {
             id: pcIcon
             anchors.horizontalCenter: parent.horizontalCenter
-            source: "qrc:/res/desktop_windows-48px.svg"
+            source: "image://sfsymbol/macwindow"
             sourceSize {
-                width: 200
+                width: 228
                 height: 200
             }
         }
 
         Image {
-            // TODO: Tooltip
             id: stateIcon
             anchors.horizontalCenter: pcIcon.horizontalCenter
             anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: !model.online ? -18 : -16
-            visible: !model.statusUnknown && (!model.online || !model.paired)
-            source: !model.online ? "qrc:/res/warning_FILL1_wght300_GRAD200_opsz24.svg" : "qrc:/res/baseline-lock-24px.svg"
+            anchors.verticalCenterOffset: 5
+            visible: !model.statusUnknown && !model.online
+            source: "image://sfsymbol/exclamationmark.triangle.fill"
             sourceSize {
-                width: !model.online ? 75 : 70
-                height: !model.online ? 75 : 70
+                width: 60
+                height: 60
+            }
+        }
+
+        Image {
+            id: lockIcon
+            anchors.horizontalCenter: pcIcon.horizontalCenter
+            anchors.verticalCenter: pcIcon.verticalCenter
+            anchors.verticalCenterOffset: 5
+            visible: !model.statusUnknown && model.online
+            source: model.paired ? "image://sfsymbol/lock.open" : "image://sfsymbol/lock.fill"
+            sourceSize {
+                width: 56
+                height: 56
             }
         }
 
@@ -140,9 +152,9 @@ CenteredGridView {
             id: statusUnknownSpinner
             anchors.horizontalCenter: pcIcon.horizontalCenter
             anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: -15
-            width: 75
-            height: 75
+            anchors.verticalCenterOffset: 5
+            width: 60
+            height: 60
             visible: model.statusUnknown
             running: visible
         }
@@ -154,7 +166,7 @@ CenteredGridView {
             width: parent.width
             anchors.top: pcIcon.bottom
             anchors.bottom: parent.bottom
-            font.pointSize: 36
+            font.pointSize: 20
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
             elide: Text.ElideRight
@@ -222,7 +234,7 @@ CenteredGridView {
         onClicked: {
             if (model.online) {
                 if (!model.serverSupported) {
-                    errorDialog.text = qsTr("The version of GeForce Experience on %1 is not supported by this build of Moonlight. You must update Moonlight to stream from %1.").arg(model.name)
+                    errorDialog.text = qsTr("The version of GeForce Experience on %1 is not supported by this build of Maclight. You must update Maclight to stream from %1.").arg(model.name)
                     errorDialog.helpText = ""
                     errorDialog.open()
                 }
@@ -321,24 +333,24 @@ CenteredGridView {
         standardButtons: Dialog.Ok
 
         onAboutToShow: {
-            testConnectionDialog.text = qsTr("Moonlight is testing your network connection to determine if any required ports are blocked.") + "\n\n" + qsTr("This may take a few seconds…")
+            testConnectionDialog.text = qsTr("Maclight is testing your network connection to determine if any required ports are blocked.") + "\n\n" + qsTr("This may take a few seconds…")
             showSpinner = true
         }
 
         function connectionTestComplete(result, blockedPorts)
         {
             if (result === -1) {
-                text = qsTr("The network test could not be performed because none of Moonlight's connection testing servers were reachable from this PC. Check your Internet connection or try again later.")
-                imageSrc = "qrc:/res/baseline-warning-24px.svg"
+                text = qsTr("The network test could not be performed because none of Maclight's connection testing servers were reachable from this PC. Check your Internet connection or try again later.")
+                imageSrc = "image://sfsymbol/exclamationmark.triangle"
             }
             else if (result === 0) {
-                text = qsTr("This network does not appear to be blocking Moonlight. If you still have trouble connecting, check your PC's firewall settings.") + "\n\n" + qsTr("If you are trying to stream over the Internet, install the Moonlight Internet Hosting Tool on your gaming PC and run the included Internet Streaming Tester to check your gaming PC's Internet connection.")
-                imageSrc = "qrc:/res/baseline-check_circle_outline-24px.svg"
+                text = qsTr("This network does not appear to be blocking Maclight. If you still have trouble connecting, check your PC's firewall settings.")
+                imageSrc = "image://sfsymbol/checkmark.circle"
             }
             else {
-                text = qsTr("Your PC's current network connection seems to be blocking Moonlight. Streaming over the Internet may not work while connected to this network.") + "\n\n" + qsTr("The following network ports were blocked:") + "\n"
+                text = qsTr("Your PC's current network connection seems to be blocking Maclight. Streaming over the Internet may not work while connected to this network.") + "\n\n" + qsTr("The following network ports were blocked:") + "\n"
                 text += blockedPorts
-                imageSrc = "qrc:/res/baseline-error_outline-24px.svg"
+                imageSrc = "image://sfsymbol/exclamationmark.circle"
             }
 
             // Stop showing the spinner and show the image instead
@@ -396,7 +408,7 @@ CenteredGridView {
         id: showPcDetailsDialog
         property string pcDetails : "";
         text: showPcDetailsDialog.pcDetails
-        imageSrc: "qrc:/res/baseline-help_outline-24px.svg"
+        imageSrc: "image://sfsymbol/questionmark.circle"
         standardButtons: Dialog.Ok
     }
 

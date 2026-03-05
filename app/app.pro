@@ -2,7 +2,7 @@ QT += core quick network quickcontrols2 svg
 CONFIG += c++17
 
 # On macOS, this is the name displayed in the global menu bar
-TARGET = Moonlight
+TARGET = Maclight
 
 include(../globaldefs.pri)
 
@@ -36,7 +36,6 @@ macx:!disable-prebuilts {
 macx {
     !disable-prebuilts {
         LIBS += -lssl.3 -lcrypto.3 -lavcodec.62 -lavutil.60 -lswscale.9 -lopus -lSDL2 -lSDL2_ttf
-        CONFIG += discord-rpc
     }
 
     LIBS += -lobjc -framework VideoToolbox -framework AVFoundation -framework CoreVideo -framework CoreGraphics -framework CoreMedia -framework AppKit -framework Metal -framework QuartzCore
@@ -48,10 +47,12 @@ macx {
 
     SOURCES += \
         backend/macosaccent.mm \
+        backend/sfsymbolprovider.mm \
         settings/awdlcontroller.cpp
 
     HEADERS += \
         backend/macosaccent.h \
+        backend/sfsymbolprovider.h \
         settings/awdlcontroller.h
 }
 
@@ -71,7 +72,6 @@ SOURCES += \
     backend/nvpairingmanager.cpp \
     backend/computermanager.cpp \
     backend/boxartmanager.cpp \
-    backend/richpresencemanager.cpp \
     cli/commandlineparser.cpp \
     cli/listapps.cpp \
     cli/quitstream.cpp \
@@ -86,6 +86,7 @@ SOURCES += \
     streaming/input/mouse.cpp \
     streaming/input/reltouch.cpp \
     streaming/session.cpp \
+    streaming/metalhudutils.mm \
     streaming/audio/audio.cpp \
     streaming/audio/renderers/sdlaud.cpp \
     gui/computermodel.cpp \
@@ -114,7 +115,6 @@ HEADERS += \
     backend/nvpairingmanager.h \
     backend/computermanager.h \
     backend/boxartmanager.h \
-    backend/richpresencemanager.h \
     cli/commandlineparser.h \
     cli/listapps.h \
     cli/quitstream.h \
@@ -122,6 +122,7 @@ HEADERS += \
     settings/streamingpreferences.h \
     streaming/input/input.h \
     streaming/session.h \
+    streaming/metalhudutils.h \
     streaming/audio/renderers/renderer.h \
     streaming/audio/renderers/sdl.h \
     gui/computermodel.h \
@@ -168,26 +169,6 @@ config_EGL {
         streaming/video/ffmpeg-renderers/eglvid.h \
         streaming/video/ffmpeg-renderers/eglimagefactory.h
 }
-config_SL {
-    message(Steam Link build configuration selected)
-
-    !disable-prebuilts {
-        # Link against our NEON-optimized libopus build
-        LIBS += -L$$PWD/../libs/steamlink/lib
-        INCLUDEPATH += $$PWD/../libs/steamlink/include
-        LIBS += -lopus -larmasm -lNE10
-    }
-
-    DEFINES += EMBEDDED_BUILD STEAM_LINK HAVE_SLVIDEO HAVE_SLAUDIO
-    LIBS += -lSLVideo -lSLAudio
-
-    SOURCES += \
-        streaming/video/slvid.cpp \
-        streaming/audio/renderers/slaud.cpp
-    HEADERS += \
-        streaming/video/slvid.h \
-        streaming/audio/renderers/slaud.h
-}
 macx {
     message(VideoToolbox renderer selected)
 
@@ -198,12 +179,6 @@ macx {
 
     HEADERS += \
         streaming/video/ffmpeg-renderers/vt.h
-}
-discord-rpc {
-    message(Discord integration enabled)
-
-    LIBS += -ldiscord-rpc
-    DEFINES += HAVE_DISCORD
 }
 embedded {
     message(Embedded build)
@@ -285,19 +260,12 @@ DEPENDPATH += $$PWD/../h264bitstream/h264bitstream
 macx {
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 26.0
 
-    # Create Info.plist in object dir with the correct version string
-    system(cp $$PWD/Info.plist $$OUT_PWD/Info.plist)
-    system(sed -i -e 's/VERSION/$$cat(version.txt)/g' $$OUT_PWD/Info.plist)
+    QMAKE_INFO_PLIST = $$PWD/Info.plist
 
-    QMAKE_INFO_PLIST = $$OUT_PWD/Info.plist
-
-    APP_BUNDLE_RESOURCES.files = moonlight.icns
+    APP_BUNDLE_RESOURCES.files = maclight.icns
     APP_BUNDLE_RESOURCES.path = Contents/Resources
 
-    APP_BUNDLE_PLIST.files = $$OUT_PWD/Info.plist
-    APP_BUNDLE_PLIST.path = Contents
-
-    QMAKE_BUNDLE_DATA += APP_BUNDLE_RESOURCES APP_BUNDLE_PLIST
+    QMAKE_BUNDLE_DATA += APP_BUNDLE_RESOURCES
 
     !disable-prebuilts {
         APP_BUNDLE_FRAMEWORKS.files = $$files(../libs/mac/Frameworks/*.framework, true) $$files(../libs/mac/lib/*.dylib, true)

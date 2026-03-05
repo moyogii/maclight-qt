@@ -23,7 +23,8 @@ enum ToastCategory {
     ToastCategoryNone,
     ToastCategoryCaptureKeys,
     ToastCategoryGamepadMouse,
-    ToastCategoryConnectionStatus
+    ToastCategoryConnectionStatus,
+    ToastCategoryAudioMute
 };
 
 class IOverlayRenderer

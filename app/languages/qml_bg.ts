@@ -227,8 +227,8 @@
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="66"/>
-        <source>This PC&apos;s Internet connection is blocking Moonlight. Streaming over the Internet may not work while connected to this network.</source>
-        <translation>Връзката с Интернет на този компютър блокира Moonlight. Излъчването по Интернет може да не работи, докато компютърът е свързан към тази мрежа.</translation>
+        <source>This PC&apos;s Internet connection is blocking Maclight. Streaming over the Internet may not work while connected to this network.</source>
+        <translation>Връзката с Интернет на този компютър блокира Maclight. Излъчването по Интернет може да не работи, докато компютърът е свързан към тази мрежа.</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="69"/>
@@ -953,7 +953,7 @@
     </message>
     <message>
         <location filename="../gui/SettingsView.qml" line="1420"/>
-        <source>Swap left and right mouse buttons</source>
+        <source>Swap left & right mouse buttons</source>
         <translation>Размяна на левия и десния бутон на мишката</translation>
     </message>
     <message>

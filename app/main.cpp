@@ -11,6 +11,7 @@
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QRegularExpression>
+#include <QSettings>
 
 #ifdef Q_OS_UNIX
 #include <sys/socket.h>
@@ -38,6 +39,7 @@
 #include "gui/appmodel.h"
 #include "backend/computermanager.h"
 #include "backend/systemproperties.h"
+#include "backend/sfsymbolprovider.h"
 #include "streaming/session.h"
 #include "settings/streamingpreferences.h"
 #include "gui/sdlgamepadkeynavigation.h"
@@ -329,9 +331,9 @@ int main(int argc, char *argv[])
     // Set these here to allow us to use the default QSettings constructor.
     // These also ensure that our cache directory is named correctly. As such,
     // it is critical that these be called before Path::initialize().
-    QCoreApplication::setOrganizationName("Moonlight Game Streaming Project");
-    QCoreApplication::setOrganizationDomain("moonlight-stream.com");
-    QCoreApplication::setApplicationName("Moonlight");
+    QCoreApplication::setOrganizationName("Maclight (Moonlight Game Streaming Client for macOS)");
+    QCoreApplication::setOrganizationDomain("maclight-stream.com");
+    QCoreApplication::setApplicationName("Maclight");
 
     if (QFile(QDir::currentPath() + "/portable.dat").exists()) {
         QSettings::setDefaultFormat(QSettings::IniFormat);
@@ -354,7 +356,7 @@ int main(int argc, char *argv[])
 #ifdef LOG_TO_FILE
     QDir tempDir(Path::getLogDir());
 
-    s_LoggerFile = new QFile(tempDir.filePath(QString("Moonlight-%1.log").arg(QDateTime::currentSecsSinceEpoch())));
+    s_LoggerFile = new QFile(tempDir.filePath(QString("Maclight-%1.log").arg(QDateTime::currentSecsSinceEpoch())));
     if (s_LoggerFile->open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream(stderr) << "Redirecting log output to " << s_LoggerFile->fileName() << Qt::endl;
         s_LoggerStream.setDevice(s_LoggerFile);
@@ -381,7 +383,7 @@ int main(int argc, char *argv[])
 
 #ifdef LOG_TO_FILE
     // Prune the oldest existing logs if there are more than 10
-    QStringList existingLogNames = tempDir.entryList(QStringList("Moonlight-*.log"), QDir::NoFilter, QDir::SortFlag::Time);
+    QStringList existingLogNames = tempDir.entryList(QStringList("Maclight-*.log"), QDir::NoFilter, QDir::SortFlag::Time);
     for (int i = 10; i < existingLogNames.size(); i++) {
         qInfo() << "Removing old log file:" << existingLogNames.at(i);
         QFile(tempDir.filePath(existingLogNames.at(i))).remove();
@@ -414,14 +416,38 @@ int main(int argc, char *argv[])
     //
     qputenv("QSG_RENDER_LOOP", "basic");
 
-#if defined(Q_OS_DARWIN) && defined(QT_DEBUG)
-    // Enable Metal validation for debug builds
-    qputenv("MTL_DEBUG_LAYER", "1");
-    qputenv("MTL_SHADER_VALIDATION", "1");
-    
-    // Enable Metal HUD overlay for debug builds
-    qputenv("MTL_HUD_ENABLED", "1");
-    qInfo() << "Metal HUD overlay enabled for debug build";
+#if defined(Q_OS_DARWIN)
+    QSettings settings;
+    const bool debugModeEnabled = settings.value("debugModeEnabled", false).toBool();
+    const bool metalDebugLayerEnabled = debugModeEnabled && settings.value("metalDebugLayerEnabled", false).toBool();
+    const bool metalShaderValidationEnabled = debugModeEnabled && settings.value("metalShaderValidationEnabled", false).toBool();
+    const bool metalPerformanceHudEnabled = debugModeEnabled && settings.value("metalPerformanceHudEnabled", false).toBool();
+
+    if (metalPerformanceHudEnabled) {
+        qputenv("MTL_HUD_ENABLED", "1");
+    }
+    else {
+        qunsetenv("MTL_HUD_ENABLED");
+    }
+
+    if (metalDebugLayerEnabled) {
+        qputenv("MTL_DEBUG_LAYER", "1");
+    }
+    else {
+        qunsetenv("MTL_DEBUG_LAYER");
+    }
+
+    if (metalShaderValidationEnabled) {
+        qputenv("MTL_SHADER_VALIDATION", "1");
+    }
+    else {
+        qunsetenv("MTL_SHADER_VALIDATION");
+    }
+
+    qInfo() << "Metal settings:"
+            << "MTL_HUD_ENABLED=" << (metalPerformanceHudEnabled ? "1" : "0")
+            << "MTL_DEBUG_LAYER=" << (metalDebugLayerEnabled ? "1" : "0")
+            << "MTL_SHADER_VALIDATION=" << (metalShaderValidationEnabled ? "1" : "0");
 #endif
 
     // We don't want system proxies to apply to us
@@ -481,8 +507,8 @@ int main(int argc, char *argv[])
     // Set our app name for SDL to use with PulseAudio and PipeWire. This matches what we
     // provide as our app name to libsoundio too. On SDL 2.0.18+, SDL_APP_NAME is also used
     // for screensaver inhibitor reporting.
-    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Moonlight");
-    SDL_SetHint(SDL_HINT_APP_NAME, "Moonlight");
+    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Maclight");
+    SDL_SetHint(SDL_HINT_APP_NAME, "Maclight");
 
     // We handle capturing the mouse ourselves when it leaves the window, so we don't need
     // SDL doing it for us behind our backs.
@@ -491,6 +517,10 @@ int main(int argc, char *argv[])
     // Enable fast parameter checks on SDL 3.4.0+. We don't abuse the API by passing
     // incorrect objects, so we don't need additional expensive parameter checks.
     SDL_SetHint("SDL_INVALID_PARAM_CHECKS", "1");
+
+    // Disable hotplug detection for SDL_GetKeyboards() and SDL_GetMice(). We don't
+    // use this functionality and it can cause hangs when querying broken devices.
+    SDL_SetHint("SDL_WINDOWS_DETECT_DEVICE_HOTPLUG", "0");
 
     QGuiApplication app(argc, argv);
 
@@ -604,6 +634,7 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
+    engine.addImageProvider("sfsymbol", new SfSymbolProvider());
     QString initialView;
     bool hasGUI = true;
 
@@ -655,6 +686,11 @@ int main(int argc, char *argv[])
     if (hasGUI) {
         engine.rootContext()->setContextProperty("initialView", initialView);
         engine.rootContext()->setContextProperty("runConfigChecks", commandLineParserResult == GlobalCommandLineParser::NormalStartRequested);
+#if defined(QT_DEBUG)
+        engine.rootContext()->setContextProperty("isDebugBuild", true);
+#else
+        engine.rootContext()->setContextProperty("isDebugBuild", false);
+#endif
 
         // Load the main.qml file
         engine.load(QUrl(QStringLiteral("qrc:/gui/main.qml")));

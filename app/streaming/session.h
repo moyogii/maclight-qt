@@ -173,6 +173,13 @@ private:
     void getWindowDimensions(int& x, int& y,
                              int& width, int& height);
 
+    void getMenuBarExcludedBounds(int displayIndex, int& x, int& y,
+                                  int& width, int& height);
+
+    int getTargetDisplayIndex();
+
+    void getEffectiveMenuBarStreamResolution(int displayIndex, int& width, int& height);
+
     void toggleFullscreen();
 
     void notifyMouseEmulationMode(bool enabled);
@@ -252,6 +259,7 @@ private:
 
     StreamingPreferences* m_Preferences;
     bool m_IsFullScreen;
+    bool m_UseMacMenuBarBorderlessWindow;
     SupportedVideoFormatList m_SupportedVideoFormats; // Sorted in order of descending priority
     STREAM_CONFIGURATION m_StreamConfig;
     DECODER_RENDERER_CALLBACKS m_VideoCallbacks;
@@ -263,6 +271,7 @@ private:
     SDL_mutex* m_DecoderLock;
     bool m_AudioDisabled;
     bool m_AudioMuted;
+    bool m_AudioMutedByHotkey;
     Uint32 m_FullScreenFlag;
     QQuickWindow* m_QtWindow;
     bool m_UnexpectedTermination;

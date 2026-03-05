@@ -15,6 +15,7 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
       m_SwapMouseButtons(prefs.swapMouseButtons),
       m_ReverseScrollDirection(prefs.reverseScrollDirection),
       m_SwapFaceButtons(prefs.swapFaceButtons),
+      m_SwapWinAltKeys(prefs.swapWinAltKeys),
       m_MouseWasInVideoRegion(false),
       m_PendingMouseButtonsAllUpOnVideoRegionLeave(false),
       m_PointerRegionLockActive(false),
@@ -134,6 +135,12 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
     m_SpecialKeyCombos[KeyComboQuitAndExit].keyCode = SDL_GetKeyFromScancode(m_SpecialKeyCombos[KeyComboQuitAndExit].scanCode);
     m_SpecialKeyCombos[KeyComboQuitAndExit].requiredModifiers = static_cast<Uint16>(prefs.hotkeyExitStreamModifiers);
     m_SpecialKeyCombos[KeyComboQuitAndExit].enabled = true;
+
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].keyCombo = KeyComboToggleAudioMute;
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].scanCode = static_cast<SDL_Scancode>(prefs.hotkeyToggleAudioMuteScanCode);
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].keyCode = SDL_GetKeyFromScancode(m_SpecialKeyCombos[KeyComboToggleAudioMute].scanCode);
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].requiredModifiers = static_cast<Uint16>(prefs.hotkeyToggleAudioMuteModifiers);
+    m_SpecialKeyCombos[KeyComboToggleAudioMute].enabled = true;
 
     m_OldIgnoreDevices = SDL_GetHint(SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES);
     m_OldIgnoreDevicesExcept = SDL_GetHint(SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT);
@@ -346,15 +353,27 @@ QString SdlInputHandler::getCaptureSystemKeysModeString()
     }
 }
 
+bool SdlInputHandler::isFullscreenLikeWindow()
+{
+    if (m_Window == nullptr) {
+        return false;
+    }
+
+    Uint32 windowFlags = SDL_GetWindowFlags(m_Window);
+
+    // Consider both true fullscreen and borderless menu bar mode as "fullscreen-like"
+    return (windowFlags & SDL_WINDOW_FULLSCREEN) ||
+           (windowFlags & SDL_WINDOW_BORDERLESS);
+}
+
 void SdlInputHandler::updateKeyboardGrabState()
 {
     bool shouldGrab = false;
 
     if (m_CaptureSystemKeysMode != StreamingPreferences::CSK_OFF) {
         shouldGrab = isCaptureActive();
-        Uint32 windowFlags = SDL_GetWindowFlags(m_Window);
         if (m_CaptureSystemKeysMode == StreamingPreferences::CSK_FULLSCREEN &&
-                !(windowFlags & SDL_WINDOW_FULLSCREEN)) {
+                !isFullscreenLikeWindow()) {
             // Ungrab if it's fullscreen only and we left fullscreen
             shouldGrab = false;
         }
@@ -394,7 +413,7 @@ bool SdlInputHandler::isSystemKeyCaptureActive()
     }
 
     if (m_CaptureSystemKeysMode == StreamingPreferences::CSK_FULLSCREEN &&
-            !(windowFlags & SDL_WINDOW_FULLSCREEN)) {
+            !isFullscreenLikeWindow()) {
         return false;
     }
 

@@ -32,6 +32,7 @@
 #define SER_YUV444 "yuv444"
 #define SER_VIDEODEC "videodec"
 #define SER_WINDOWMODE "windowmode"
+#define SER_DISPLAY_MENUBAR_BORDERLESS_FULLSCREEN "displayMenuBarInBorderlessFullscreen"
 #define SER_MDNS "mdns"
 #define SER_QUITAPPAFTER "quitAppAfter"
 #define SER_ABSMOUSEMODE "mouseacceleration"
@@ -41,7 +42,6 @@
 #define SER_CONNWARNINGS "connwarnings"
 #define SER_CONFWARNINGS "confwarnings"
 #define SER_UIDISPLAYMODE "uidisplaymode"
-#define SER_RICHPRESENCE "richpresence"
 #define SER_GAMEPADMOUSE "gamepadmouse"
 #define SER_DEFAULTVER "defaultver"
 #define SER_PACKETSIZE "packetsize"
@@ -54,10 +54,15 @@
 #define SER_SWAPFACEBUTTONS "swapfacebuttons"
 #define SER_CAPTURESYSKEYS "capturesyskeys"
 #define SER_KEEPAWAKE "keepawake"
+#define SER_SWAPWINALTKEYS "swapwinaltkeys"
 #define SER_LANGUAGE "language"
 #define SER_CLIPBOARDSYNC "clipboardsync"
 #define SER_AWDL_ENABLED "awdlenabled"
 #define SER_AWDL_FIRSTRUN_SHOWN "awdlfirstrunshown"
+#define SER_METAL_DEBUG_LAYER_ENABLED "metalDebugLayerEnabled"
+#define SER_METAL_SHADER_VALIDATION_ENABLED "metalShaderValidationEnabled"
+#define SER_METAL_PERFORMANCE_HUD_ENABLED "metalPerformanceHudEnabled"
+#define SER_DEBUG_MODE_ENABLED "debugModeEnabled"
 #define SER_HOTKEY_TOGGLE_STATS_MODS "hotkeyToggleStatsMods"
 #define SER_HOTKEY_TOGGLE_STATS_SCAN "hotkeyToggleStatsScan"
 #define SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS "hotkeyToggleMouseModeMods"
@@ -66,6 +71,8 @@
 #define SER_HOTKEY_EXIT_STREAM_SCAN "hotkeyExitStreamScan"
 #define SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_MODS "hotkeyToggleCaptureSysKeysMods"
 #define SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN "hotkeyToggleCaptureSysKeysScan"
+#define SER_HOTKEY_TOGGLE_AUDIO_MUTE_MODS "hotkeyToggleAudioMuteMods"
+#define SER_HOTKEY_TOGGLE_AUDIO_MUTE_SCAN "hotkeyToggleAudioMuteScan"
 
 // Default hotkey modifiers: Ctrl+Alt+Shift (SDL KMOD_CTRL|KMOD_ALT|KMOD_SHIFT = 0x0C0|0x300|0x003 = 963)
 #define DEFAULT_HOTKEY_MODIFIERS 0x3C3
@@ -74,6 +81,7 @@
 #define DEFAULT_HOTKEY_TOGGLE_MOUSE_MODE_SCAN 16
 #define DEFAULT_HOTKEY_EXIT_STREAM_SCAN 8
 #define DEFAULT_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN 14
+#define DEFAULT_HOTKEY_TOGGLE_AUDIO_MUTE_SCAN 4  // SDL_SCANCODE_A
 
 #define CURRENT_DEFAULT_VER 2
 
@@ -158,7 +166,6 @@ void StreamingPreferences::reload()
     framePacing = settings.value(SER_FRAMEPACING, false).toBool();
     connectionWarnings = settings.value(SER_CONNWARNINGS, true).toBool();
     configurationWarnings = settings.value(SER_CONFWARNINGS, true).toBool();
-    richPresence = settings.value(SER_RICHPRESENCE, true).toBool();
     gamepadMouse = settings.value(SER_GAMEPADMOUSE, true).toBool();
     detectNetworkBlocking = settings.value(SER_DETECTNETBLOCKING, true).toBool();
     showPerformanceOverlay = settings.value(SER_SHOWPERFOVERLAY, false).toBool();
@@ -169,9 +176,14 @@ void StreamingPreferences::reload()
     reverseScrollDirection = settings.value(SER_REVERSESCROLL, false).toBool();
     swapFaceButtons = settings.value(SER_SWAPFACEBUTTONS, false).toBool();
     keepAwake = settings.value(SER_KEEPAWAKE, true).toBool();
+    swapWinAltKeys = settings.value(SER_SWAPWINALTKEYS, false).toBool();
     enableClipboardSync = settings.value(SER_CLIPBOARDSYNC, true).toBool();
     awdlEnabled = settings.value(SER_AWDL_ENABLED, false).toBool();
     awdlFirstRunShown = settings.value(SER_AWDL_FIRSTRUN_SHOWN, false).toBool();
+    metalDebugLayerEnabled = settings.value(SER_METAL_DEBUG_LAYER_ENABLED, false).toBool();
+    metalShaderValidationEnabled = settings.value(SER_METAL_SHADER_VALIDATION_ENABLED, false).toBool();
+    metalPerformanceHudEnabled = settings.value(SER_METAL_PERFORMANCE_HUD_ENABLED, false).toBool();
+    debugModeEnabled = settings.value(SER_DEBUG_MODE_ENABLED, false).toBool();
     enableHdr = settings.value(SER_HDR, false).toBool();
     captureSysKeysMode = static_cast<CaptureSysKeysMode>(settings.value(SER_CAPTURESYSKEYS,
                                                          static_cast<int>(CaptureSysKeysMode::CSK_OFF)).toInt());
@@ -185,9 +197,10 @@ void StreamingPreferences::reload()
                                                         // Try to load from the old preference value too
                                                         static_cast<int>(settings.value(SER_FULLSCREEN, true).toBool() ?
                                                                              recommendedFullScreenMode : WindowMode::WM_WINDOWED)).toInt());
+    displayMenuBarInBorderlessFullscreen = settings.value(SER_DISPLAY_MENUBAR_BORDERLESS_FULLSCREEN, false).toBool();
     uiDisplayMode = static_cast<UIDisplayMode>(settings.value(SER_UIDISPLAYMODE,
                                                static_cast<int>(settings.value(SER_STARTWINDOWED, true).toBool() ? UIDisplayMode::UI_WINDOWED
-                                                                                                                 : UIDisplayMode::UI_MAXIMIZED)).toInt());
+                                                                                                                  : UIDisplayMode::UI_MAXIMIZED)).toInt());
     language = static_cast<Language>(settings.value(SER_LANGUAGE,
                                                     static_cast<int>(Language::LANG_AUTO)).toInt());
 
@@ -199,6 +212,8 @@ void StreamingPreferences::reload()
     hotkeyExitStreamScanCode = settings.value(SER_HOTKEY_EXIT_STREAM_SCAN, DEFAULT_HOTKEY_EXIT_STREAM_SCAN).toInt();
     hotkeyToggleCaptureSysKeysModifiers = settings.value(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_MODS, DEFAULT_HOTKEY_MODIFIERS).toInt();
     hotkeyToggleCaptureSysKeysScanCode = settings.value(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN, DEFAULT_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN).toInt();
+    hotkeyToggleAudioMuteModifiers = settings.value(SER_HOTKEY_TOGGLE_AUDIO_MUTE_MODS, DEFAULT_HOTKEY_MODIFIERS).toInt();
+    hotkeyToggleAudioMuteScanCode = settings.value(SER_HOTKEY_TOGGLE_AUDIO_MUTE_SCAN, DEFAULT_HOTKEY_TOGGLE_AUDIO_MUTE_SCAN).toInt();
 
     // Perform default settings updates as required based on last default version
     if (defaultVer < 1) {
@@ -361,7 +376,6 @@ void StreamingPreferences::save()
     settings.setValue(SER_FRAMEPACING, framePacing);
     settings.setValue(SER_CONNWARNINGS, connectionWarnings);
     settings.setValue(SER_CONFWARNINGS, configurationWarnings);
-    settings.setValue(SER_RICHPRESENCE, richPresence);
     settings.setValue(SER_GAMEPADMOUSE, gamepadMouse);
     settings.setValue(SER_PACKETSIZE, packetSize);
     settings.setValue(SER_DETECTNETBLOCKING, detectNetworkBlocking);
@@ -372,6 +386,7 @@ void StreamingPreferences::save()
     settings.setValue(SER_VIDEOCFG, static_cast<int>(videoCodecConfig));
     settings.setValue(SER_VIDEODEC, static_cast<int>(videoDecoderSelection));
     settings.setValue(SER_WINDOWMODE, static_cast<int>(windowMode));
+    settings.setValue(SER_DISPLAY_MENUBAR_BORDERLESS_FULLSCREEN, displayMenuBarInBorderlessFullscreen);
     settings.setValue(SER_UIDISPLAYMODE, static_cast<int>(uiDisplayMode));
     settings.setValue(SER_LANGUAGE, static_cast<int>(language));
     settings.setValue(SER_DEFAULTVER, CURRENT_DEFAULT_VER);
@@ -381,10 +396,15 @@ void StreamingPreferences::save()
     settings.setValue(SER_REVERSESCROLL, reverseScrollDirection);
     settings.setValue(SER_SWAPFACEBUTTONS, swapFaceButtons);
     settings.setValue(SER_CAPTURESYSKEYS, captureSysKeysMode);
+    settings.setValue(SER_SWAPWINALTKEYS, swapWinAltKeys);
     settings.setValue(SER_KEEPAWAKE, keepAwake);
     settings.setValue(SER_CLIPBOARDSYNC, enableClipboardSync);
     settings.setValue(SER_AWDL_ENABLED, awdlEnabled);
     settings.setValue(SER_AWDL_FIRSTRUN_SHOWN, awdlFirstRunShown);
+    settings.setValue(SER_METAL_DEBUG_LAYER_ENABLED, metalDebugLayerEnabled);
+    settings.setValue(SER_METAL_SHADER_VALIDATION_ENABLED, metalShaderValidationEnabled);
+    settings.setValue(SER_METAL_PERFORMANCE_HUD_ENABLED, metalPerformanceHudEnabled);
+    settings.setValue(SER_DEBUG_MODE_ENABLED, debugModeEnabled);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_MODS, hotkeyToggleStatsModifiers);
     settings.setValue(SER_HOTKEY_TOGGLE_STATS_SCAN, hotkeyToggleStatsScanCode);
     settings.setValue(SER_HOTKEY_TOGGLE_MOUSE_MODE_MODS, hotkeyToggleMouseModeModifiers);
@@ -393,6 +413,8 @@ void StreamingPreferences::save()
     settings.setValue(SER_HOTKEY_EXIT_STREAM_SCAN, hotkeyExitStreamScanCode);
     settings.setValue(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_MODS, hotkeyToggleCaptureSysKeysModifiers);
     settings.setValue(SER_HOTKEY_TOGGLE_CAPTURE_SYS_KEYS_SCAN, hotkeyToggleCaptureSysKeysScanCode);
+    settings.setValue(SER_HOTKEY_TOGGLE_AUDIO_MUTE_MODS, hotkeyToggleAudioMuteModifiers);
+    settings.setValue(SER_HOTKEY_TOGGLE_AUDIO_MUTE_SCAN, hotkeyToggleAudioMuteScanCode);
 }
 
 int StreamingPreferences::getDefaultBitrate(int width, int height, int fps, bool yuv444)

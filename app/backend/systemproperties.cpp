@@ -48,6 +48,11 @@ SystemProperties::SystemProperties()
     hasDesktopEnvironment = WMUtils::isRunningDesktopEnvironment();
     isRunningWayland = false;
     isRunningXWayland = false;
+#ifdef QT_DEBUG
+    isDebugBuild = true;
+#else
+    isDebugBuild = false;
+#endif
     usesMaterial3Theme = QLibraryInfo::version() >= QVersionNumber(6, 5, 0);
     macOsAccentColor = "#0A84FF";
     QString nativeArch = QSysInfo::currentCpuArchitecture();
@@ -70,12 +75,6 @@ SystemProperties::SystemProperties()
 
     // Assume we can probably launch a browser if we're in a GUI environment
     hasBrowser = hasDesktopEnvironment;
-
-#ifdef HAVE_DISCORD
-    hasDiscordIntegration = true;
-#else
-    hasDiscordIntegration = false;
-#endif
 
     // These will be queried asynchronously to avoid blocking the UI
     hasHardwareAcceleration = true;

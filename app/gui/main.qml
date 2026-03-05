@@ -11,6 +11,7 @@ import SdlGamepadKeyNavigation 1.0
 
 ApplicationWindow {
     property bool pollingActive: false
+    property int versionClickCount: 0
 
     // Set by SettingsView to force the back operation to pop all
     // pages except the initial view. This is required when doing
@@ -63,6 +64,15 @@ ApplicationWindow {
             SystemProperties.hasHardwareAccelerationChanged.connect(hasHardwareAccelerationChanged)
             SystemProperties.unmappedGamepadsChanged.connect(hasUnmappedGamepadsChanged)
             SystemProperties.startAsyncLoad()
+        }
+
+        if (!pollingActive) {
+            ComputerManager.startPolling()
+            pollingActive = true
+        }
+
+        if (!active) {
+            inactivityTimer.restart()
         }
     }
 
@@ -260,7 +270,10 @@ ApplicationWindow {
                 // Only make the button visible if the user has navigated somewhere.
                 visible: stackView.depth > 1
 
-                iconSource: "qrc:/res/arrow_left.svg"
+                iconSource: "image://sfsymbol/arrow.left"
+                Layout.preferredWidth: 48
+                Layout.preferredHeight: 48
+                Layout.alignment: Qt.AlignVCenter
 
                 onClicked: goBack()
 
@@ -292,13 +305,61 @@ ApplicationWindow {
                 font.pointSize: 12
                 horizontalAlignment: Qt.AlignRight
                 verticalAlignment: Qt.AlignVCenter
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!StreamingPreferences.debugModeEnabled) {
+                            versionClickCount++
+                            versionClickTimer.restart()
+                            if (versionClickCount >= 5) {
+                                StreamingPreferences.debugModeEnabled = true
+                                StreamingPreferences.save()
+                                versionClickCount = 0
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button {
+                id: debugModeToggle
+                visible: StreamingPreferences.debugModeEnabled && stackView.currentItem instanceof SettingsView
+                text: qsTr("Disable Debug Mode")
+                font.pointSize: 10
+                flat: true
+                background: Rectangle {
+                    radius: 3
+                    color: debugModeToggle.down ? "#505050" : (debugModeToggle.hovered ? "#484848" : "transparent")
+                }
+                contentItem: Text {
+                    text: debugModeToggle.text
+                    font: debugModeToggle.font
+                    color: debugModeToggle.enabled ? "#f2f2f7" : "#808080"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                onClicked: {
+                    StreamingPreferences.debugModeEnabled = false
+                    StreamingPreferences.save()
+                }
+            }
+
+            Timer {
+                id: versionClickTimer
+                interval: 2000
+                onTriggered: versionClickCount = 0
             }
 
             NavigableToolButton {
                 id: addPcButton
                 visible: stackView.currentItem instanceof PcView
 
-                iconSource:  "qrc:/res/ic_add_to_queue_white_48px.svg"
+                iconSource: "image://sfsymbol/plus.circle"
+                Layout.preferredWidth: 56
+                Layout.preferredHeight: 56
+                Layout.alignment: Qt.AlignVCenter
 
                 ToolTip.delay: 1000
                 ToolTip.timeout: 3000
@@ -321,40 +382,18 @@ ApplicationWindow {
             }
 
             NavigableToolButton {
-                id: helpButton
-                visible: SystemProperties.hasBrowser
-
-                iconSource: "qrc:/res/question_mark.svg"
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Help") + (helpShortcut.nativeText ? (" ("+helpShortcut.nativeText+")") : "")
-
-                Shortcut {
-                    id: helpShortcut
-                    sequence: StandardKey.HelpContents
-                    onActivated: helpButton.clicked()
-                }
-
-                // TODO need to make sure browser is brought to foreground.
-                onClicked: Qt.openUrlExternally("https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide");
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
                 // TODO: Implement gamepad mapping then unhide this button
                 visible: false
+
+                iconSource: "image://sfsymbol/gamecontroller.fill"
+                Layout.preferredWidth: 56
+                Layout.preferredHeight: 56
+                Layout.alignment: Qt.AlignVCenter
 
                 ToolTip.delay: 1000
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Gamepad Mapper")
-
-                iconSource: "qrc:/res/ic_videogame_asset_white_48px.svg"
 
                 onClicked: navigateTo("qrc:/gui/GamepadMapper.qml", GamepadMapper)
 
@@ -366,7 +405,10 @@ ApplicationWindow {
             NavigableToolButton {
                 id: settingsButton
 
-                iconSource:  "qrc:/res/settings.svg"
+                iconSource: "image://sfsymbol/gearshape.fill"
+                Layout.preferredWidth: 56
+                Layout.preferredHeight: 56
+                Layout.alignment: Qt.AlignVCenter
 
                 onClicked: navigateTo("qrc:/gui/SettingsView.qml", SettingsView)
 
@@ -390,7 +432,7 @@ ApplicationWindow {
 
     ErrorMessageDialog {
         id: noHwDecoderDialog
-        text: qsTr("No functioning hardware accelerated video decoder was detected by Moonlight. " +
+        text: qsTr("No functioning hardware accelerated video decoder was detected by Maclight. " +
                    "Your streaming performance may be severely degraded in this configuration.")
         helpText: qsTr("Click the Help button for more information on solving this problem.")
         helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Fixing-Hardware-Decoding-Problems"
@@ -399,7 +441,7 @@ ApplicationWindow {
     ErrorMessageDialog {
         id: unmappedGamepadDialog
         property string unmappedGamepads : ""
-        text: qsTr("Moonlight detected gamepads without a mapping:") + "\n" + unmappedGamepads
+        text: qsTr("Maclight detected gamepads without a mapping:") + "\n" + unmappedGamepads
         helpTextSeparator: "\n\n"
         helpText: qsTr("Click the Help button for information on how to map your gamepads.")
         helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Gamepad-Mapping"
@@ -445,6 +487,15 @@ ApplicationWindow {
         }
     }
 
+    HotkeyCaptureDialog {
+        id: toggleAudioMuteHotkeyCaptureDialog
+        hotkeyName: qsTr("Toggle Stream Audio Mute")
+        onHotkeyCaptured: {
+            StreamingPreferences.hotkeyToggleAudioMuteModifiers = modifiers
+            StreamingPreferences.hotkeyToggleAudioMuteScanCode = scanCode
+        }
+    }
+
     // This dialog appears when quitting via keyboard or gamepad button
     NavigableMessageDialog {
         id: quitConfirmationDialog
@@ -481,10 +532,11 @@ ApplicationWindow {
         id: addPcDialog
         property string label: qsTr("Enter the IP address of your host PC:")
 
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        footer: DialogOkCancelButtonBox {
+            targetDialog: addPcDialog
+        }
 
         onOpened: {
-            // Force keyboard focus on the textbox so keyboard navigation works
             editText.forceActiveFocus()
         }
 
