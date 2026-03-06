@@ -122,56 +122,53 @@ CenteredGridView {
             anchors.fill: appIcon
 
             sourceComponent: Item {
-                RoundButton {
-                    // Don't steal focus from the toolbar buttons
-                    focusPolicy: Qt.NoFocus
-
-                    anchors.horizontalCenterOffset: appIcon.isPlaceholder ? -47 : 0
-                    anchors.verticalCenterOffset: appIcon.isPlaceholder ? -75 : -60
+                Row {
                     anchors.centerIn: parent
-                    implicitWidth: 85
-                    implicitHeight: 85
+                    spacing: 10
 
-                    icon.source: "image://sfsymbol/play.fill"
-                    icon.width: 75
-                    icon.height: 75
+                    RoundButton {
+                        focusPolicy: Qt.NoFocus
 
-                    onClicked: {
-                        launchOrResumeSelectedApp(true)
+                        implicitWidth: 70
+                        implicitHeight: 70
+
+                        icon.source: "image://sfsymbol/play.fill"
+                        icon.width: 60
+                        icon.height: 60
+
+                        onClicked: {
+                            launchOrResumeSelectedApp(true)
+                        }
+
+                        ToolTip.text: qsTr("Resume Game")
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 3000
+                        ToolTip.visible: hovered
+
+                        Material.background: "#D0808080"
                     }
 
-                    ToolTip.text: qsTr("Resume Game")
-                    ToolTip.delay: 1000
-                    ToolTip.timeout: 3000
-                    ToolTip.visible: hovered
+                    RoundButton {
+                        focusPolicy: Qt.NoFocus
 
-                    Material.background: "#D0808080"
-                }
+                        implicitWidth: 70
+                        implicitHeight: 70
 
-                RoundButton {
-                    // Don't steal focus from the toolbar buttons
-                    focusPolicy: Qt.NoFocus
+                        icon.source: "image://sfsymbol/stop.fill"
+                        icon.width: 60
+                        icon.height: 60
 
-                    anchors.horizontalCenterOffset: appIcon.isPlaceholder ? 47 : 0
-                    anchors.verticalCenterOffset: appIcon.isPlaceholder ? -75 : 60
-                    anchors.centerIn: parent
-                    implicitWidth: 85
-                    implicitHeight: 85
+                        onClicked: {
+                            doQuitGame()
+                        }
 
-                    icon.source: "image://sfsymbol/stop.fill"
-                    icon.width: 75
-                    icon.height: 75
+                        ToolTip.text: qsTr("Quit Game")
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 3000
+                        ToolTip.visible: hovered
 
-                    onClicked: {
-                        doQuitGame()
+                        Material.background: "#D0808080"
                     }
-
-                    ToolTip.text: qsTr("Quit Game")
-                    ToolTip.delay: 1000
-                    ToolTip.timeout: 3000
-                    ToolTip.visible: hovered
-
-                    Material.background: "#D0808080"
                 }
             }
         }
