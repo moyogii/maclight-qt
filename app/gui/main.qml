@@ -298,6 +298,29 @@ ApplicationWindow {
                 text: !titleLabel.visible ? stackView.currentItem.objectName : ""
             }
 
+            Button {
+                id: debugModeToggle
+                visible: StreamingPreferences.debugModeEnabled && stackView.currentItem instanceof SettingsView
+                text: qsTr("Disable Debug Mode")
+                font.pointSize: 10
+                flat: true
+                background: Rectangle {
+                    radius: 3
+                    color: debugModeToggle.down ? "#505050" : (debugModeToggle.hovered ? "#484848" : "transparent")
+                }
+                contentItem: Text {
+                    text: debugModeToggle.text
+                    font: debugModeToggle.font
+                    color: debugModeToggle.enabled ? "#f2f2f7" : "#808080"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                onClicked: {
+                    StreamingPreferences.debugModeEnabled = false
+                    StreamingPreferences.save()
+                }
+            }
+
             Label {
                 id: versionLabel
                 visible: stackView.currentItem instanceof SettingsView
@@ -320,29 +343,6 @@ ApplicationWindow {
                             }
                         }
                     }
-                }
-            }
-
-            Button {
-                id: debugModeToggle
-                visible: StreamingPreferences.debugModeEnabled && stackView.currentItem instanceof SettingsView
-                text: qsTr("Disable Debug Mode")
-                font.pointSize: 10
-                flat: true
-                background: Rectangle {
-                    radius: 3
-                    color: debugModeToggle.down ? "#505050" : (debugModeToggle.hovered ? "#484848" : "transparent")
-                }
-                contentItem: Text {
-                    text: debugModeToggle.text
-                    font: debugModeToggle.font
-                    color: debugModeToggle.enabled ? "#f2f2f7" : "#808080"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                onClicked: {
-                    StreamingPreferences.debugModeEnabled = false
-                    StreamingPreferences.save()
                 }
             }
 
