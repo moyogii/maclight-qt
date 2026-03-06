@@ -130,8 +130,8 @@ CenteredGridView {
             visible: !model.statusUnknown && !model.online
             source: "image://sfsymbol/exclamationmark.triangle.fill"
             sourceSize {
-                width: 60
-                height: 60
+                width: 68
+                height: 68
             }
         }
 
@@ -141,10 +141,10 @@ CenteredGridView {
             anchors.verticalCenter: pcIcon.verticalCenter
             anchors.verticalCenterOffset: 5
             visible: !model.statusUnknown && model.online
-            source: model.paired ? "image://sfsymbol/lock.open" : "image://sfsymbol/lock.fill"
+            source: model.paired ? "image://sfsymbol/checkmark.circle.fill" : "image://sfsymbol/lock.fill"
             sourceSize {
-                width: 56
-                height: 56
+                width: 64
+                height: 64
             }
         }
 
