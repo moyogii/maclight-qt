@@ -21,6 +21,8 @@ extern "C" int LiGetPendingVideoFrames(void);
 #import <dispatch/dispatch.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
+#import <MetalFX/MetalFX.h>
+#import <CoreVideo/CoreVideo.h>
 
 #if __has_include(<Metal/MTL4Compiler.h>) && __has_include(<Metal/MTL4LibraryDescriptor.h>) && __has_include(<Metal/MTL4RenderPipeline.h>)
 #define HAVE_MTL4_COMPILER 1
@@ -39,6 +41,11 @@ static const char* metalErrorString(NSError* error)
     }
 
     return error.localizedDescription.UTF8String;
+}
+
+static bool isMetalPerformanceHudEnabled()
+{
+    return qgetenv("MTL_HUD_ENABLED") == "1";
 }
 
 // ParamBuffer matches the CscParams struct in the Metal shader (FP16 types)
@@ -117,7 +124,16 @@ public:
           m_InFlightSemaphore(dispatch_semaphore_create(3)),
           m_PresentationMutex(SDL_CreateMutex()),
           m_PresentationCond(SDL_CreateCond()),
-          m_PendingPresentationCount(0)
+          m_PendingPresentationCount(0),
+          m_EnableSpatialUpscaling(false),
+          m_SpatialUpscalingSupported(false),
+          m_UseSpatialUpscaling(false),
+          m_ScalerInputWidth(0),
+          m_ScalerInputHeight(0),
+          m_ScalerOutputWidth(0),
+          m_ScalerOutputHeight(0),
+          m_SpatialScaler(nil),
+          m_IntermediateTexture(nil)
     {
         SDL_AtomicSet(&m_OverlayActive, 0);
     }
@@ -217,6 +233,16 @@ public:
         if (m_MetalView != nullptr) {
             SDL_Metal_DestroyView(m_MetalView);
         }
+
+        if (m_SpatialScaler != nil) {
+            [m_SpatialScaler release];
+            m_SpatialScaler = nil;
+        }
+
+        if (m_IntermediateTexture != nil) {
+            [m_IntermediateTexture release];
+            m_IntermediateTexture = nil;
+        }
     }}
 
     void discardNextDrawable()
@@ -286,6 +312,105 @@ public:
         discardNextDrawable();
     }
 
+    virtual bool getSpatialUpscalingInfo(int* inputWidth, int* inputHeight,
+                                       int* outputWidth, int* outputHeight) override
+    {
+        if (!m_EnableSpatialUpscaling || !m_SpatialUpscalingSupported) {
+            return false;
+        }
+
+        if (inputWidth) *inputWidth = m_ScalerInputWidth;
+        if (inputHeight) *inputHeight = m_ScalerInputHeight;
+        if (outputWidth) *outputWidth = m_ScalerOutputWidth;
+        if (outputHeight) *outputHeight = m_ScalerOutputHeight;
+
+        return m_ScalerInputWidth > 0;
+    }
+
+    bool recreateSpatialScalerIfNeeded(int inputWidth, int inputHeight, int outputWidth, int outputHeight) API_AVAILABLE(macos(13.0))
+    {
+        if (!m_EnableSpatialUpscaling || !m_SpatialUpscalingSupported) {
+            return false;
+        }
+
+        // Skip if input and output resolutions match (no upscaling needed)
+        if (inputWidth == outputWidth && inputHeight == outputHeight) {
+            return false;
+        }
+
+        // Skip if unchanged
+        if (m_SpatialScaler != nil &&
+            m_ScalerInputWidth == inputWidth && m_ScalerInputHeight == inputHeight &&
+            m_ScalerOutputWidth == outputWidth && m_ScalerOutputHeight == outputHeight) {
+            return true;
+        }
+
+        // Release old scaler and intermediate texture
+        [m_SpatialScaler release];
+        m_SpatialScaler = nil;
+        [m_IntermediateTexture release];
+        m_IntermediateTexture = nil;
+
+        // Create scaler descriptor
+        auto scalerDesc = [[MTLFXSpatialScalerDescriptor alloc] init];
+        scalerDesc.colorTextureFormat = MTLPixelFormatBGRA8Unorm;
+        scalerDesc.outputTextureFormat = m_MetalLayer.pixelFormat;
+        scalerDesc.inputWidth = inputWidth;
+        scalerDesc.inputHeight = inputHeight;
+        scalerDesc.outputWidth = outputWidth;
+        scalerDesc.outputHeight = outputHeight;
+
+        // Use HDR mode for HDR content, perceptual for SDR
+        if (m_MetalLayer.wantsExtendedDynamicRangeContent) {
+            scalerDesc.colorProcessingMode = MTLFXSpatialScalerColorProcessingModeHDR;
+        } else {
+            scalerDesc.colorProcessingMode = MTLFXSpatialScalerColorProcessingModePerceptual;
+        }
+
+        // Create scaler
+        m_SpatialScaler = [scalerDesc newSpatialScalerWithDevice:m_MetalLayer.device];
+        [scalerDesc release];
+
+        if (m_SpatialScaler == nil) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to create MetalFX spatial scaler for %dx%d -> %dx%d",
+                         inputWidth, inputHeight, outputWidth, outputHeight);
+            m_EnableSpatialUpscaling = false;
+            return false;
+        }
+
+        // Create intermediate texture for YUV→RGB output
+        // This texture must match the scaler's input requirements
+        auto texDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                                          width:inputWidth
+                                                                         height:inputHeight
+                                                                      mipmapped:NO];
+        texDesc.usage = m_SpatialScaler.colorTextureUsage | MTLTextureUsageRenderTarget;
+        texDesc.storageMode = MTLStorageModePrivate;
+
+        m_IntermediateTexture = [m_MetalLayer.device newTextureWithDescriptor:texDesc];
+        if (m_IntermediateTexture == nil) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to create intermediate texture for MetalFX");
+            [m_SpatialScaler release];
+            m_SpatialScaler = nil;
+            m_EnableSpatialUpscaling = false;
+            return false;
+        }
+
+        m_ScalerInputWidth = inputWidth;
+        m_ScalerInputHeight = inputHeight;
+        m_ScalerOutputWidth = outputWidth;
+        m_ScalerOutputHeight = outputHeight;
+
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "MetalFX Spatial Scaler: %dx%d -> %dx%d (%.2fx)",
+                    inputWidth, inputHeight, outputWidth, outputHeight,
+                    (float)outputWidth / inputWidth);
+
+        return true;
+    }
+
     bool updateVideoRegionSizeForFrame(AVFrame* frame)
     {
         int drawableWidth, drawableHeight;
@@ -307,11 +432,31 @@ public:
         dst.x = dst.y = 0;
         dst.w = drawableWidth;
         dst.h = drawableHeight;
-        StreamUtils::scaleSourceToDestinationSurface(&src, &dst);
 
-        // Track whether the video fully covers the drawable for render-pass load action.
-        m_VideoFillsDrawable = (dst.x == 0 && dst.y == 0 &&
-                                dst.w == drawableWidth && dst.h == drawableHeight);
+        m_UseSpatialUpscaling = false;
+
+        if (m_EnableSpatialUpscaling && m_SpatialUpscalingSupported) {
+            // Spatial upscaling: full-screen output (no letterboxing)
+            // Try to create scaler (will be used in render pass)
+            if (@available(macOS 13.0, *)) {
+                if (recreateSpatialScalerIfNeeded(frame->width, frame->height, drawableWidth, drawableHeight)) {
+                    m_UseSpatialUpscaling = true;
+                }
+            }
+
+            if (m_UseSpatialUpscaling) {
+                m_VideoFillsDrawable = true;
+            }
+        }
+
+        if (!m_UseSpatialUpscaling) {
+            // Original letterboxing path
+            StreamUtils::scaleSourceToDestinationSurface(&src, &dst);
+
+            // Track whether the video fully covers the drawable for render-pass load action.
+            m_VideoFillsDrawable = (dst.x == 0 && dst.y == 0 &&
+                                    dst.w == drawableWidth && dst.h == drawableHeight);
+        }
 
         // Convert screen space to normalized device coordinates
         SDL_FRect renderRect;
@@ -828,15 +973,6 @@ public:
             }
         }
 
-        // Prepare a render pass to render into the drawable
-        auto renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
-        renderPassDescriptor.colorAttachments[0].texture = drawable.texture;
-        renderPassDescriptor.colorAttachments[0].loadAction = m_VideoFillsDrawable ? MTLLoadActionDontCare : MTLLoadActionClear;
-        if (!m_VideoFillsDrawable) {
-            renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
-        }
-        renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
-
         // Keep frame data alive until GPU work is complete
         __block AVFrame* completionFrame = av_frame_alloc();
         if (completionFrame == nullptr || av_frame_ref(completionFrame, frame) < 0) {
@@ -850,23 +986,78 @@ public:
         dispatch_semaphore_wait(m_InFlightSemaphore, DISPATCH_TIME_FOREVER);
 
         auto commandBuffer = [m_CommandQueue commandBuffer];
-        auto renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+        id<MTLRenderCommandEncoder> renderEncoder = nil;
 
-        // Bind textures and buffers then draw the video region
-        [renderEncoder setRenderPipelineState:m_VideoPipelineState];
-        if (isVideoToolboxFrame) {
-            for (size_t i = 0; i < planes; i++) {
-                [renderEncoder setFragmentTexture:CVMetalTextureGetTexture(cvMetalTextures[i]) atIndex:i];
+        // Use 3-pass rendering for MetalFX spatial upscaling
+        if (m_UseSpatialUpscaling) {
+            // Pass 1: YUV→RGB to intermediate texture
+            auto intermediatePass = [MTLRenderPassDescriptor renderPassDescriptor];
+            intermediatePass.colorAttachments[0].texture = m_IntermediateTexture;
+            intermediatePass.colorAttachments[0].loadAction = MTLLoadActionClear;
+            intermediatePass.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 0);
+            intermediatePass.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+            auto intermediateEncoder = [commandBuffer renderCommandEncoderWithDescriptor:intermediatePass];
+            [intermediateEncoder setRenderPipelineState:m_VideoPipelineState];
+            if (isVideoToolboxFrame) {
+                for (size_t i = 0; i < planes; i++) {
+                    [intermediateEncoder setFragmentTexture:CVMetalTextureGetTexture(cvMetalTextures[i]) atIndex:i];
+                }
+            } else {
+                for (size_t i = 0; i < planes; i++) {
+                    [intermediateEncoder setFragmentTexture:mapPlaneForSoftwareFrame(frame, i) atIndex:i];
+                }
             }
-        }
-        else {
-            for (size_t i = 0; i < planes; i++) {
-                [renderEncoder setFragmentTexture:mapPlaneForSoftwareFrame(frame, i) atIndex:i];
+            [intermediateEncoder setFragmentBuffer:m_CscParamsBuffer offset:0 atIndex:0];
+            [intermediateEncoder setVertexBuffer:m_VideoVertexBuffer offset:0 atIndex:0];
+            [intermediateEncoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+            [intermediateEncoder endEncoding];
+
+            // Pass 2: MetalFX spatial upscale to drawable
+            m_SpatialScaler.colorTexture = m_IntermediateTexture;
+            m_SpatialScaler.inputContentWidth = frame->width;
+            m_SpatialScaler.inputContentHeight = frame->height;
+            m_SpatialScaler.outputTexture = drawable.texture;
+            [m_SpatialScaler encodeToCommandBuffer:commandBuffer];
+
+            // Pass 3: Create render encoder for overlay pass
+            auto overlayPass = [MTLRenderPassDescriptor renderPassDescriptor];
+            overlayPass.colorAttachments[0].texture = drawable.texture;
+            overlayPass.colorAttachments[0].loadAction = MTLLoadActionLoad;
+            overlayPass.colorAttachments[0].storeAction = MTLStoreActionStore;
+            renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:overlayPass];
+
+            // Signal that video was rendered via MetalFX
+            planes = 0;
+        } else {
+            // Original path: direct rendering to drawable
+            // Prepare a render pass to render into the drawable
+            auto renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+            renderPassDescriptor.colorAttachments[0].texture = drawable.texture;
+            renderPassDescriptor.colorAttachments[0].loadAction = m_VideoFillsDrawable ? MTLLoadActionDontCare : MTLLoadActionClear;
+            if (!m_VideoFillsDrawable) {
+                renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
             }
+            renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+            renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+
+            // Bind textures and buffers then draw the video region
+            [renderEncoder setRenderPipelineState:m_VideoPipelineState];
+            if (isVideoToolboxFrame) {
+                for (size_t i = 0; i < planes; i++) {
+                    [renderEncoder setFragmentTexture:CVMetalTextureGetTexture(cvMetalTextures[i]) atIndex:i];
+                }
+            } else {
+                for (size_t i = 0; i < planes; i++) {
+                    [renderEncoder setFragmentTexture:mapPlaneForSoftwareFrame(frame, i) atIndex:i];
+                }
+            }
+            [renderEncoder setFragmentBuffer:m_CscParamsBuffer offset:0 atIndex:0];
+            [renderEncoder setVertexBuffer:m_VideoVertexBuffer offset:0 atIndex:0];
+            [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+            [renderEncoder endEncoding];
         }
-        [renderEncoder setFragmentBuffer:m_CscParamsBuffer offset:0 atIndex:0];
-        [renderEncoder setVertexBuffer:m_VideoVertexBuffer offset:0 atIndex:0];
-        [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 
         // Now draw any overlays that are enabled.
         if (SDL_AtomicGet(&m_OverlayActive) != 0) {
@@ -1329,6 +1520,40 @@ public:
                                         withBytes:bgPixel
                                       bytesPerRow:sizeof(bgPixel)];
 
+        // Initialize spatial upscaling
+        m_EnableSpatialUpscaling = params->enableSpatialUpscaling;
+
+        // Disable MetalFX if Metal Performance HUD is enabled (causes crash)
+        if (m_EnableSpatialUpscaling && isMetalPerformanceHudEnabled()) {
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                        "MetalFX Spatial Upscaling disabled due to Metal Performance HUD");
+            m_EnableSpatialUpscaling = false;
+        }
+
+        // MetalFX supports HDR content via MTLFXSpatialScalerColorProcessingModeHDR
+        // No longer disabling for HDR content
+
+        // Check macOS 13.0+ availability for MetalFX Spatial Scaler
+        if (@available(macOS 13.0, *)) {
+            if ([MTLFXSpatialScalerDescriptor supportsDevice:m_MetalLayer.device]) {
+                m_SpatialUpscalingSupported = m_EnableSpatialUpscaling;
+                if (m_SpatialUpscalingSupported) {
+                    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                                "MetalFX Spatial Scaler: Supported");
+                }
+            } else {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                            "MetalFX Spatial Scaler: Not supported on this device");
+                m_EnableSpatialUpscaling = false;
+                m_SpatialUpscalingSupported = false;
+            }
+        } else {
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                        "MetalFX Spatial Scaler: Requires macOS 13.0+");
+            m_EnableSpatialUpscaling = false;
+            m_SpatialUpscalingSupported = false;
+        }
+
         return true;
     }}
 
@@ -1626,6 +1851,21 @@ private:
     SDL_mutex* m_PresentationMutex;
     SDL_cond* m_PresentationCond;
     int m_PendingPresentationCount;
+
+    // Spatial upscaling members
+    bool m_EnableSpatialUpscaling;
+    bool m_SpatialUpscalingSupported;
+    bool m_UseSpatialUpscaling;
+    int m_ScalerInputWidth;
+    int m_ScalerInputHeight;
+    int m_ScalerOutputWidth;
+    int m_ScalerOutputHeight;
+
+    // MetalFX spatial scaler (macOS 13.0+)
+    id<MTLFXSpatialScaler> m_SpatialScaler API_AVAILABLE(macos(13.0));
+
+    // Intermediate texture for YUV→RGB conversion before MetalFX upscaling
+    id<MTLTexture> m_IntermediateTexture;
 };
 
 @implementation DisplayLinkDelegate {

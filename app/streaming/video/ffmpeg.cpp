@@ -835,23 +835,49 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
             double peakVideoMbps = m_BwTracker.GetPeakMbps();
 #endif
 
-            ret = snprintf(&output[offset],
-                           length - offset,
-                           "Stream %dx%d (%s)\n"
+            // Check if spatial upscaling is enabled
+            int upscInW = 0, upscInH = 0, upscOutW = 0, upscOutH = 0;
+            bool hasUpscaling = m_FrontendRenderer != nullptr && 
+                               m_FrontendRenderer->getSpatialUpscalingInfo(&upscInW, &upscInH, &upscOutW, &upscOutH);
+
+            if (hasUpscaling) {
+                // Combine stream resolution with upscaling info on same line
+                ret = snprintf(&output[offset],
+                               length - offset,
+                               "Stream %dx%d -> %dx%d (%s, MetalFX)\n"
 #ifdef DISPLAY_BITRATE
-                           "Mbps %.1f  Peak(%us) %.1f\n"
+                               "Mbps %.1f  Peak(%us) %.1f\n"
 #endif
-                           ,
-                           m_VideoDecoderCtx->width,
-                           m_VideoDecoderCtx->height,
-                           codecString
+                               ,
+                               upscInW, upscInH, upscOutW, upscOutH,
+                               codecString
 #ifdef DISPLAY_BITRATE
-                           ,
-                           avgVideoMbps,
-                           m_BwTracker.GetWindowSeconds(),
-                           peakVideoMbps
+                               ,
+                               avgVideoMbps,
+                               m_BwTracker.GetWindowSeconds(),
+                               peakVideoMbps
 #endif
-                           );
+                               );
+            } else {
+                // Original format without upscaling
+                ret = snprintf(&output[offset],
+                               length - offset,
+                               "Stream %dx%d (%s)\n"
+#ifdef DISPLAY_BITRATE
+                               "Mbps %.1f  Peak(%us) %.1f\n"
+#endif
+                               ,
+                               m_VideoDecoderCtx->width,
+                               m_VideoDecoderCtx->height,
+                               codecString
+#ifdef DISPLAY_BITRATE
+                               ,
+                               avgVideoMbps,
+                               m_BwTracker.GetWindowSeconds(),
+                               peakVideoMbps
+#endif
+                               );
+            }
             if (ret < 0 || ret >= length - offset) {
                 SDL_assert(false);
                 return;
@@ -949,29 +975,38 @@ void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, i
         }
 
         if (hasLatencyData) {
-            ret = snprintf(&output[offset],
-                           length - offset,
-                           "Total Latency: %.2f ms\n",
-                           totalLatencyMs);
-            if (ret < 0 || ret >= length - offset) {
-                SDL_assert(false);
-                return;
+            // Get system key capture mode string
+            QString sysKeysStr;
+            if (Session::get() != nullptr && Session::get()->getInputHandler() != nullptr) {
+                sysKeysStr = Session::get()->getInputHandler()->getCaptureSystemKeysModeString();
             }
 
-            offset += ret;
-        }
+            if (!sysKeysStr.isEmpty()) {
+                // Combine Total Latency and Sys Keys on same line
+                ret = snprintf(&output[offset],
+                               length - offset,
+                               "Total Latency: %.2f ms | Sys Keys: %s\n",
+                               totalLatencyMs,
+                               sysKeysStr.toUtf8().constData());
+                if (ret < 0 || ret >= length - offset) {
+                    SDL_assert(false);
+                    return;
+                }
 
-        // Add system key capture mode
-        if (Session::get() != nullptr && Session::get()->getInputHandler() != nullptr) {
-            ret = snprintf(&output[offset],
-                           length - offset,
-                           "Sys Keys: %s\n",
-                           Session::get()->getInputHandler()->getCaptureSystemKeysModeString().toUtf8().constData());
-            if (ret < 0 || ret >= length - offset) {
-                SDL_assert(false);
-                return;
+                offset += ret;
+            } else {
+                // Only Total Latency
+                ret = snprintf(&output[offset],
+                               length - offset,
+                               "Total Latency: %.2f ms\n",
+                               totalLatencyMs);
+                if (ret < 0 || ret >= length - offset) {
+                    SDL_assert(false);
+                    return;
+                }
+
+                                offset += ret;
             }
-            offset += ret;
         }
     }
 }

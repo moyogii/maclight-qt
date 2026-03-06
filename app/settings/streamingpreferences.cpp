@@ -48,6 +48,7 @@
 #define SER_DETECTNETBLOCKING "detectnetblocking"
 #define SER_SHOWPERFOVERLAY "showperfoverlay"
 #define SER_SWAPMOUSEBUTTONS "swapmousebuttons"
+#define SER_SPATIALUPSCALING "spatialupscaling"
 #define SER_MUTEONFOCUSLOSS "muteonfocusloss"
 #define SER_BACKGROUNDGAMEPAD "backgroundgamepad"
 #define SER_REVERSESCROLL "reversescroll"
@@ -185,6 +186,7 @@ void StreamingPreferences::reload()
     metalPerformanceHudEnabled = settings.value(SER_METAL_PERFORMANCE_HUD_ENABLED, false).toBool();
     debugModeEnabled = settings.value(SER_DEBUG_MODE_ENABLED, false).toBool();
     enableHdr = settings.value(SER_HDR, false).toBool();
+    enableSpatialUpscaling = settings.value(SER_SPATIALUPSCALING, false).toBool();
     captureSysKeysMode = static_cast<CaptureSysKeysMode>(settings.value(SER_CAPTURESYSKEYS,
                                                          static_cast<int>(CaptureSysKeysMode::CSK_OFF)).toInt());
     audioConfig = static_cast<AudioConfig>(settings.value(SER_AUDIOCFG,
@@ -382,6 +384,7 @@ void StreamingPreferences::save()
     settings.setValue(SER_SHOWPERFOVERLAY, showPerformanceOverlay);
     settings.setValue(SER_AUDIOCFG, static_cast<int>(audioConfig));
     settings.setValue(SER_HDR, enableHdr);
+    settings.setValue(SER_SPATIALUPSCALING, enableSpatialUpscaling);
     settings.setValue(SER_YUV444, enableYUV444);
     settings.setValue(SER_VIDEOCFG, static_cast<int>(videoCodecConfig));
     settings.setValue(SER_VIDEODEC, static_cast<int>(videoDecoderSelection));

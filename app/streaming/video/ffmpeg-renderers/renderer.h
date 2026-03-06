@@ -241,6 +241,15 @@ public:
         return frame->color_range == AVCOL_RANGE_JPEG;
     }
 
+    virtual bool getSpatialUpscalingInfo(int* inputWidth, int* inputHeight, 
+                                         int* outputWidth, int* outputHeight) {
+        (void)inputWidth;
+        (void)inputHeight;
+        (void)outputWidth;
+        (void)outputHeight;
+        return false;
+    }
+
     virtual bool isRenderThreadSupported() {
         // Render thread is supported by default
         return true;

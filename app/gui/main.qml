@@ -302,7 +302,7 @@ ApplicationWindow {
                 id: debugModeToggle
                 visible: StreamingPreferences.debugModeEnabled && stackView.currentItem instanceof SettingsView
                 text: qsTr("Disable Debug Mode")
-                font.pointSize: 10
+                font.pointSize: 12
                 flat: true
                 background: Rectangle {
                     radius: 3

@@ -105,7 +105,7 @@ Flickable {
             id: basicSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"" + settingsPage.accentColor + "\">" + qsTr("Basic Settings") + "</font>"
+            title: "<font color=\"" + settingsPage.accentColor + "\">" + qsTr("Video Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -847,6 +847,38 @@ Flickable {
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Uses a borderless window below the macOS menu bar instead of a fullscreen Space. This sends a custom resolution to the host which may not be officially supported and could cause streaming errors.")
+                }
+
+                CheckBox {
+                    id: enableMetalFxUpscaling
+                    width: parent.width
+                    hoverEnabled: true
+                    text: qsTr("Use MetalFX Spatial Upscaling")
+                    font.pointSize: 12
+                    checked: StreamingPreferences.enableSpatialUpscaling
+                    enabled: !StreamingPreferences.metalPerformanceHudEnabled
+                    onCheckedChanged: {
+                        StreamingPreferences.enableSpatialUpscaling = checked
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: !StreamingPreferences.metalPerformanceHudEnabled ?
+                                      qsTr("Uses Apple's MetalFX to upscale lower resolution streams to match your display. Optimized for real-time video with minimal latency. Requires macOS Ventura (13.0+) or later.") :
+                                      qsTr("MetalFX is disabled when Metal Performance HUD is enabled.")
+                }
+
+                Label {
+                    width: parent.width
+                    visible: enableMetalFxUpscaling.enabled &&
+                             enableMetalFxUpscaling.checked &&
+                             parent.primaryDisplayWidth > 0 &&
+                             (StreamingPreferences.width < parent.primaryDisplayWidth ||
+                              StreamingPreferences.height < parent.primaryDisplayHeight)
+                    text: qsTr("Your upscaled resolution will be %1x%2").arg(parent.primaryDisplayWidth).arg(parent.primaryDisplayHeight)
+                    font.pointSize: 9
+                    wrapMode: Text.Wrap
                 }
             }
         }
